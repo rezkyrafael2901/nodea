@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { Anthropic } from "@anthropic-ai/sdk";
 import { buildIdentityPrompt, getPalette, type IdentityData } from "@/lib/vana-sources";
 
 export async function POST(request: Request) {
@@ -7,46 +6,22 @@ export async function POST(request: Request) {
     const { prompt, sources }: { prompt: string; sources: IdentityData[] } =
       await request.json();
 
-    // Use AI provider — try Anthropic first, then fallback
-    const provider = process.env.AI_PROVIDER || "anthropic";
-    const apiKey =
-      provider === "anthropic"
-        ? process.env.ANTHROPIC_API_KEY
-        : process.env.OPENROUTER_API_KEY;
+    // Use AI provider — OpenRouter (configurable via env)
+    const apiKey = process.env.OPENROUTER_API_KEY || process.env.ANTHROPIC_API_KEY;
 
     if (!apiKey) {
       // FALLBACK: return mock analysis (for development/demo)
       return NextResponse.json(getMockAnalysis(sources));
     }
 
-    if (provider === "anthropic") {
-      const anthropic = new Anthropic({ apiKey });
-      const response = await anthropic.messages.create({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 2000,
-        temperature: 0.7,
-        system: `You are an AI that analyzes human digital identity across multiple social platforms. 
-        You must respond with ONLY valid JSON matching the exact schema requested. No markdown, no explanation.`,
-        messages: [{ role: "user", content: prompt }],
-      });
+    const endpoint = process.env.OPENROUTER_API_KEY
+      ? "https://openrouter.ai/api/v1/chat/completions"
+      : "https://api.anthropic.com/v1/messages";
 
-      // Parse the JSON from the AI response
-      const content = response.content[0].type === "text" ? response.content[0].text : "";
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        return NextResponse.json(getMockAnalysis(sources));
-      }
-      
-      try {
-        const result = JSON.parse(jsonMatch[0]);
-        return NextResponse.json(result);
-      } catch {
-        return NextResponse.json(getMockAnalysis(sources));
-      }
+    const useOpenRouter = Boolean(process.env.OPENROUTER_API_KEY);
 
-    } else {
-      // OPENROUTER / OpenAI-compatible
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    if (useOpenRouter) {
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${apiKey}`,
@@ -55,7 +30,7 @@ export async function POST(request: Request) {
           "X-Title": "Vana Soul",
         },
         body: JSON.stringify({
-          model: "anthropic/claude-sonnet-4-20250514",
+          model: process.env.OPENROUTER_MODEL || "anthropic/claude-sonnet-4-20250514",
           messages: [{ role: "user", content: prompt }],
           max_tokens: 2000,
           temperature: 0.7,
@@ -81,14 +56,47 @@ export async function POST(request: Request) {
       }
     }
 
+    // Anthropic native API
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "Content-Type": "application/json",
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514",
+        max_tokens: 2000,
+        temperature: 0.7,
+        system: "You are an AI that analyzes human digital identity across multiple social platforms. You must respond with ONLY valid JSON matching the exact schema requested. No markdown, no explanation.",
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+
+    if (!response.ok) {
+      return NextResponse.json(getMockAnalysis(sources));
+    }
+
+    const data = await response.json();
+    const content = data.content?.[0]?.text || "";
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      return NextResponse.json(getMockAnalysis(sources));
+    }
+
+    try {
+      const result = JSON.parse(jsonMatch[0]);
+      return NextResponse.json(result);
+    } catch {
+      return NextResponse.json(getMockAnalysis(sources));
+    }
+
   } catch (error) {
     console.error("Identity API error:", error);
-    // On error, return mock analysis so UI still works
     return NextResponse.json(getMockAnalysis([]));
   }
 }
 
-// Fallback mock analysis when no AI key is configured
 function getMockAnalysis(sources: IdentityData[]): Record<string, unknown> {
   const sourceNames = sources.map((s) => s.source);
   const hasCode = sourceNames.includes("github");
