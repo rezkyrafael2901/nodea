@@ -30,6 +30,6 @@
     "@emnapi/runtime": "2.0.0-alpha.3"
   },
   "engines": {
-    "node": "20.x"
+    "node": "24.x"
   }
 }
