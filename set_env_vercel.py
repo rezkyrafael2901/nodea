@@ -29,7 +29,7 @@ if not token:
 # Map VANA_PRIVATE_KEY to VANA_APP_PRIVATE_KEY for Vana SDK
 custom_vars = {
     'VANA_APP_PRIVATE_KEY': '0xa9d4880660e44f43ab875c9787c09d110d70bf3e0d41bf6134efbe5b0bf641cc',
-    'VANA_APP_URL': 'https://nodea.vercel.app',
+    'VANA_APP_URL': 'https://nodea-app.vercel.app',
     'VANA_ENV': 'production',
     'VANA_NETWORK': 'mainnet',
     'AI_PROVIDER': 'openrouter',

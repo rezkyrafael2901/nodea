@@ -26,7 +26,7 @@ export async function POST(request: Request) {
         headers: {
           "Authorization": `Bearer ${apiKey}`,
           "Content-Type": "application/json",
-          "HTTP-Referer": "https://nodea.vercel.app",
+          "HTTP-Referer": "https://nodea-app.vercel.app",
           "X-Title": "Nodea",
         },
         body: JSON.stringify({

@@ -132,7 +132,7 @@ export function buildSoulCardSvg(p: OgCardParams): string {
       <text x="120" y="590" font-family="system-ui,sans-serif" font-size="18" fill="rgba(255,255,255,0.5)">Aesthetic: ${safeAesthetic} • Built on Vana Network</text>
 
       <!-- Watermark -->
-      <text x="1100" y="590" text-anchor="end" font-family="system-ui,sans-serif" font-size="14" fill="rgba(255,255,255,0.2)">nodea.vercel.app${ref ? ` · via ${ref}` : ""}</text>
+      <text x="1100" y="590" text-anchor="end" font-family="system-ui,sans-serif" font-size="14" fill="rgba(255,255,255,0.2)">nodea-app.vercel.app${ref ? ` · via ${ref}` : ""}</text>
     </svg>`;
 }
 
