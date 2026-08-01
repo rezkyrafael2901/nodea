@@ -591,7 +591,7 @@ export default function PageClient() {
     return (
       <div
         key={source.id}
-        className={`group p-4 rounded-xl border transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-xl hover:shadow-violet-500/[0.07] ${
+        className={`group relative flex h-full flex-col rounded-xl border p-4 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-xl hover:shadow-violet-500/[0.07] ${
           isConnected
             ? "bg-emerald-500/[0.04] border-emerald-500/25 hover:border-emerald-500/40"
             : disabledOnMobile
@@ -602,7 +602,7 @@ export default function PageClient() {
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3.5 min-w-0">
             <div className="shrink-0 transition-transform duration-300 ease-out group-hover:scale-110 group-hover:-rotate-3">
-              <BrandIconTile id={source.icon} size={46} />
+              <BrandIconTile id={source.icon} size={44} />
             </div>
             <div className="min-w-0">
               <div className="font-medium transition-colors duration-300 group-hover:text-white">{source.name}</div>
@@ -643,7 +643,7 @@ export default function PageClient() {
           </div>
         </div>
         {disabledOnMobile && (
-          <div className="mt-3 text-[11px] text-white/35 leading-relaxed">
+          <div className="mt-3 text-[11px] text-white/35 leading-relaxed line-clamp-2">
             {source.findIt?.join(" ")}
           </div>
         )}
@@ -771,67 +771,90 @@ export default function PageClient() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 lg:gap-10 items-start">
             {/* Left: Data Sources */}
             <div>
+              {/* Step 1 header */}
               <div className="flex items-center gap-3 mb-6">
-                <span className="w-7 h-7 rounded-lg bg-violet-500/15 border border-violet-500/25 text-violet-300 flex items-center justify-center text-xs font-semibold">1</span>
-                <h3 className="text-lg font-semibold tracking-tight">Connect data sources</h3>
+                <span className="w-8 h-8 rounded-xl bg-violet-500/15 border border-violet-500/25 text-violet-300 flex items-center justify-center text-sm font-semibold">1</span>
+                <div>
+                  <h3 className="text-lg font-semibold tracking-tight leading-tight">Connect data sources</h3>
+                  <p className="text-xs text-white/40 mt-0.5">Pick any accounts — your card gets deeper with each one</p>
+                </div>
+                <span className="ml-auto inline-flex items-center gap-1.5 text-xs text-white/40 shrink-0">
+                  <span className="font-semibold text-white/80">{connectedCount}</span>/<span>{totalSources}</span>
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-emerald-400/70" aria-hidden="true">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
+                  </svg>
+                </span>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-7">
                 {/* Web sources — work everywhere */}
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-[11px] font-medium uppercase tracking-wider text-white/35">Instant connect</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-medium">Mobile OK</span>
+                <section>
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-white/45">Instant connect</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-medium">Mobile OK</span>
+                    <span className="ml-auto text-[11px] text-white/25">{webSources.filter((s) => onboardedSources.has(s.id)).length}/{webSources.length}</span>
                   </div>
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {webSources.map((source) => renderSourceCard(source))}
                   </div>
-                </div>
+                </section>
 
                 {/* Desktop sources — deep data, needs Vana Desktop */}
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-[11px] font-medium uppercase tracking-wider text-white/35">Deep data</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 font-medium">Vana Desktop</span>
+                <section>
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0" />
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-white/45">Deep data</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-500/10 text-orange-400 font-medium">Vana Desktop</span>
+                    <span className="ml-auto text-[11px] text-white/25">{desktopSources.filter((s) => onboardedSources.has(s.id)).length}/{desktopSources.length}</span>
                     {!isDesktop && (
-                      <span className="text-[10px] text-white/30 font-normal">— install on a computer for these</span>
+                      <span className="text-[10px] text-white/30 font-normal hidden sm:inline">— install on a computer for these</span>
                     )}
                   </div>
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {desktopSources.map((source) => renderSourceCard(source))}
                     {!isDesktop && (
-                      <div className="p-3 rounded-xl border border-dashed border-white/[0.08] text-[11px] text-white/35 leading-relaxed">
+                      <div className="md:col-span-2 p-3.5 rounded-xl border border-dashed border-white/[0.08] text-[11px] text-white/35 leading-relaxed">
                         💻 <span className="text-white/50 font-medium">Vana Desktop</span> unlocks deep history:{" "}
                         Steam games &amp; playtime, YouTube watch history, ChatGPT conversations.{" "}
                         <span className="text-white/40">Install it on your PC at vana.org/desktop, connect your accounts there, then come back and hit Connect.</span>
                       </div>
                     )}
                   </div>
-                </div>
+                </section>
               </div>
 
               {/* Generate Button */}
               <button
                 onClick={handleGenerate}
                 disabled={generating || identities.length === 0 || connectState !== "idle"}
-                className="w-full mt-8 py-4 rounded-xl text-lg font-semibold tracking-tight transition-all bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 hover:shadow-lg hover:shadow-violet-500/25 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none"
+                className="w-full mt-8 py-4 rounded-xl text-lg font-semibold tracking-tight transition-all bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 hover:shadow-lg hover:shadow-violet-500/25 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none flex items-center justify-center gap-2.5"
               >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-5 h-5" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z" />
+                </svg>
                 {generating
                   ? "Generating…"
                   : identities.length > 0
                   ? `Generate Soul Card${identities.length > 1 ? ` (${identities.length} sources)` : ""}`
                   : "Connect at least one source"}
               </button>
+              <p className="text-center text-[11px] text-white/25 mt-3">
+                Your card is generated from real connected data — no questionnaire.
+              </p>
             </div>
 
-            {/* Right: Score + Result Preview */}
-            <div>
+            {/* Right: Score + Result Preview (sticky) */}
+            <div className="lg:sticky lg:top-24">
               <div className="flex items-center gap-3 mb-6">
-                <span className="w-7 h-7 rounded-lg bg-fuchsia-500/15 border border-fuchsia-500/25 text-fuchsia-300 flex items-center justify-center text-xs font-semibold">2</span>
-                <h3 className="text-lg font-semibold tracking-tight">Your identity</h3>
+                <span className="w-8 h-8 rounded-xl bg-fuchsia-500/15 border border-fuchsia-500/25 text-fuchsia-300 flex items-center justify-center text-sm font-semibold">2</span>
+                <div>
+                  <h3 className="text-lg font-semibold tracking-tight leading-tight">Your identity</h3>
+                  <p className="text-xs text-white/40 mt-0.5">Live score from every connected source</p>
+                </div>
               </div>
 
               {/* Soul Score — live, updates on every connect */}
