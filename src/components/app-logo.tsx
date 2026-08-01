@@ -1,7 +1,7 @@
 import React from "react";
 
 /**
- * Vana Soul — app logo.
+ * Nodea — app logo.
  * A faceted soul crystal / diamond mark with the Vana purple-to-pink
  * brand gradient. Clean geometry, no emoji.
  */
@@ -13,7 +13,7 @@ export function AppLogo({ size = 36, className }: { size?: number; className?: s
       width={size}
       height={size}
       className={className}
-      aria-label="Vana Soul"
+      aria-label="Nodea"
       role="img"
     >
       <defs>
@@ -50,14 +50,14 @@ export function AppLogo({ size = 36, className }: { size?: number; className?: s
   );
 }
 
-/** Wordmark: logo + "Vana Soul" text lockup */
+/** Wordmark: logo + "Nodea" text lockup */
 export function AppWordmark({ size = 32, className }: { size?: number; className?: string }) {
   return (
     <div className={`flex items-center gap-2.5 ${className ?? ""}`}>
       <AppLogo size={size} />
       <div className="leading-none">
         <div className="font-semibold tracking-tight text-white" style={{ fontSize: size * 0.42 }}>
-          Vana Soul
+          Nodea
         </div>
         <div className="text-[10px] uppercase tracking-[0.2em] text-white/40 mt-1">
           Identity Card

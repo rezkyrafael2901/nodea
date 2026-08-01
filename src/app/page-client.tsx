@@ -4,7 +4,6 @@ import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { DATA_SOURCES, type DataSource, type IdentityData, buildIdentityPrompt, getPalette } from "@/lib/vana-sources";
 import { computeSoulScore } from "@/lib/soul-score";
 import { DataSoulCard } from "@/components/data-soul-card";
-import { SoulScoreCard } from "@/components/soul-score-card";
 import { BrandIconTile, BrandIcon, type BrandId } from "@/components/brand-icons";
 import { AppLogo, AppWordmark } from "@/components/app-logo";
 
@@ -38,7 +37,7 @@ export default function PageClient() {
   }, []);
 
   // Persist pending connect across refresh (Patina-style)
-  const PENDING_KEY = "vana-soul:connect-pending";
+  const PENDING_KEY = "nodea:connect-pending";
   const savePending = (requestId: string, sourceId: string, mode: "web" | "full") => {
     try {
       localStorage.setItem(PENDING_KEY, JSON.stringify({ requestId, sourceId, mode, at: Date.now() }));
@@ -429,10 +428,10 @@ export default function PageClient() {
 
   const shareCard = async () => {
     const url = cardLink();
-    const text = `My Vana Soul Score: Grade ${soulScore.grade} · ${soulScore.total}/100 — ${soulScore.verdict}`;
+    const text = `My Nodea Score: Grade ${soulScore.grade} · ${soulScore.total}/100 — ${soulScore.verdict}`;
     try {
       if (navigator.share) {
-        await navigator.share({ title: "Vana Soul", text, url });
+        await navigator.share({ title: "Nodea", text, url });
         return;
       }
       await navigator.clipboard.writeText(url);
@@ -484,7 +483,7 @@ export default function PageClient() {
           }
           const a = document.createElement("a");
           a.href = URL.createObjectURL(pngBlob);
-          a.download = `vana-soul-card-${soulScore.grade}${soulScore.total}.png`;
+          a.download = `nodea-card-${soulScore.grade}${soulScore.total}.png`;
           a.click();
           setStatusMessage("✅ Card downloaded!");
         }, "image/png");
@@ -695,10 +694,10 @@ export default function PageClient() {
               Powered by Vana Data Portability
             </div>
             <h2 className="text-4xl md:text-6xl font-semibold tracking-tight mb-5 bg-gradient-to-br from-white via-white to-white/40 bg-clip-text text-transparent">
-              One card. Your whole digital self.
+              Every source. One point.
             </h2>
             <p className="text-lg md:text-xl text-white/50 max-w-2xl mx-auto leading-relaxed">
-              Connect your accounts across Vana and get a unified identity card —
+              Nodea connects your accounts across Vana into a single digital identity —
               built from your real activity, not a questionnaire.
             </p>
           </div>
@@ -760,14 +759,14 @@ export default function PageClient() {
           {/* Generating indicator */}
           {generating && (
             <div className="mb-6 p-4 bg-violet-500/10 border border-violet-500/30 rounded-xl text-violet-400 text-sm animate-pulse">
-              Generating your Soul Card...
+              Generating your Nodea card...
             </div>
           )}
 
           {/* Referral challenge banner */}
           {refFrom && (
             <div className="mb-6 p-4 bg-gradient-to-r from-amber-500/15 to-orange-500/10 border border-amber-500/30 rounded-xl text-amber-200 text-sm">
-              🏆 You came from a Soul Card <span className="font-semibold">Grade {refFrom}</span> — connect your data and try to beat their score!
+              🏆 You came from a Nodea Card <span className="font-semibold">Grade {refFrom}</span> — connect your data and try to beat their score!
             </div>
           )}
 
@@ -839,7 +838,7 @@ export default function PageClient() {
                 {generating
                   ? "Generating…"
                   : identities.length > 0
-                  ? `Generate Soul Card${identities.length > 1 ? ` (${identities.length} sources)` : ""}`
+                  ? `Generate Nodea Card${identities.length > 1 ? ` (${identities.length} sources)` : ""}`
                   : "Connect at least one source"}
               </button>
               <p className="text-center text-[11px] text-white/25 mt-3">
@@ -853,13 +852,8 @@ export default function PageClient() {
                 <span className="w-8 h-8 rounded-xl bg-fuchsia-500/15 border border-fuchsia-500/25 text-fuchsia-300 flex items-center justify-center text-sm font-semibold">2</span>
                 <div>
                   <h3 className="text-lg font-semibold tracking-tight leading-tight">Your identity</h3>
-                  <p className="text-xs text-white/40 mt-0.5">Live score from every connected source</p>
+                  <p className="text-xs text-white/40 mt-0.5">Your identity from connected data</p>
                 </div>
-              </div>
-
-              {/* Soul Score — live, updates on every connect */}
-              <div className="mb-6">
-                <SoulScoreCard score={soulScore} connectedCount={connectedCount} />
               </div>
 
               {identityResult ? (
@@ -902,7 +896,7 @@ export default function PageClient() {
               ) : (
                 <div className="h-96 flex flex-col items-center justify-center border border-dashed border-white/[0.08] rounded-2xl bg-white/[0.01]">
                   <AppLogo size={56} className="opacity-30 mb-4" />
-                  <div className="text-white/30 text-sm">Your soul card will appear here</div>
+                  <div className="text-white/30 text-sm">Your Nodea card will appear here</div>
                   <div className="text-white/20 text-xs mt-1">Connect sources → Generate</div>
                 </div>
               )}
@@ -936,7 +930,7 @@ export default function PageClient() {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-sm text-white/35">
               <AppLogo size={20} />
-              <span>Vana Soul</span>
+              <span>Nodea</span>
             </div>
             <div className="text-xs text-white/25">
               Data stays yours. Read with permission via Vana Data Portability.

@@ -77,7 +77,7 @@ export async function GET(request: Request) {
           {/* Header */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <div style={{ fontSize: 48, fontWeight: 800, color: "white", letterSpacing: -1, display: "flex" }}>VANA SOUL</div>
+              <div style={{ fontSize: 48, fontWeight: 800, color: "white", letterSpacing: -1, display: "flex" }}>NODEA</div>
               <div style={{ fontSize: 24, color: "rgba(255,255,255,0.7)", marginTop: 4, display: "flex" }}>{tagline}</div>
             </div>
             <div
@@ -189,7 +189,7 @@ export async function GET(request: Request) {
               Aesthetic: {aesthetic} • Built on Vana Network
             </div>
             <div style={{ fontSize: 13, color: "rgba(255,255,255,0.2)", display: "flex", gap: 4 }}>
-              vana-soul.vercel.app{ref ? ` · via ${ref}` : ""}
+              nodea.vercel.app{ref ? ` · via ${ref}` : ""}
             </div>
           </div>
         </div>

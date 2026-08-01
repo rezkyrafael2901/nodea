@@ -26,8 +26,8 @@ export async function POST(request: Request) {
         headers: {
           "Authorization": `Bearer ${apiKey}`,
           "Content-Type": "application/json",
-          "HTTP-Referer": "https://vana-soul.vercel.app",
-          "X-Title": "Vana Soul",
+          "HTTP-Referer": "https://nodea.vercel.app",
+          "X-Title": "Nodea",
         },
         body: JSON.stringify({
           model: process.env.OPENROUTER_MODEL || "anthropic/claude-sonnet-4-20250514",

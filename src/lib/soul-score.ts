@@ -3,7 +3,7 @@
  *
  * Quantifies a user's digital identity from connected Vana data.
  * Inspired by Patina's score system (age / corroboration / depth / standing)
- * but adapted for Vana Soul's "whole digital self" concept.
+ * but adapted for Nodea's "whole digital self" concept.
  *
  * Total = 100
  *   age       (max 35) — account age across sources

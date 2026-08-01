@@ -95,7 +95,7 @@ export function buildSoulCardSvg(p: OgCardParams): string {
       <rect x="60" y="60" width="1080" height="510" rx="24" fill="url(#card)" stroke="rgba(255,255,255,0.15)" stroke-width="1" />
 
       <!-- Header -->
-      <text x="120" y="140" font-family="system-ui,sans-serif" font-size="48" font-weight="800" fill="white">VANA SOUL</text>
+      <text x="120" y="140" font-family="system-ui,sans-serif" font-size="48" font-weight="800" fill="white">NODEA</text>
       <text x="120" y="180" font-family="system-ui,sans-serif" font-size="28" fill="rgba(255,255,255,0.7)">${safeTagline}</text>
 
       <!-- Grade badge (top right) -->
@@ -132,7 +132,7 @@ export function buildSoulCardSvg(p: OgCardParams): string {
       <text x="120" y="590" font-family="system-ui,sans-serif" font-size="18" fill="rgba(255,255,255,0.5)">Aesthetic: ${safeAesthetic} • Built on Vana Network</text>
 
       <!-- Watermark -->
-      <text x="1100" y="590" text-anchor="end" font-family="system-ui,sans-serif" font-size="14" fill="rgba(255,255,255,0.2)">vana-soul.vercel.app${ref ? ` · via ${ref}` : ""}</text>
+      <text x="1100" y="590" text-anchor="end" font-family="system-ui,sans-serif" font-size="14" fill="rgba(255,255,255,0.2)">nodea.vercel.app${ref ? ` · via ${ref}` : ""}</text>
     </svg>`;
 }
 

@@ -1,4 +1,4 @@
-# 👁️ Vana Soul — Multi-Source Identity Card
+# 👁️ Nodea — Multi-Source Identity Card
 
 Connect everything. See who you really are in one card.
 
@@ -6,11 +6,11 @@ Connect everything. See who you really are in one card.
 
 ## 🎯 Concept
 
-Vana Soul is a **multi-source digital identity platform**. Users connect their social accounts (GitHub, Instagram, ChatGPT, Spotify, YouTube, Steam) through Vana's data protocol. The app generates a **unified soul card** — an AI-analyzed identity profile with personality scores, hidden patterns, aesthetic classification, and a shareable visual card.
+Nodea is a **multi-source digital identity platform**. Users connect their social accounts (GitHub, Instagram, ChatGPT, Spotify, YouTube, Steam) through Vana's data protocol. The app generates a **unified identity card** — an AI-analyzed identity profile with personality scores, hidden patterns, aesthetic classification, and a shareable visual card.
 
 ### Why Multi-Source Wins
 
-| Dimension | Single-source apps | Vana Soul |
+| Dimension | Single-source apps | Nodea |
 |---|---|---|
 | Data sources | 1 per app | 6+ (user selects) |
 | Assist potential | Limited | Maximized (all stable connectors) |
@@ -32,7 +32,7 @@ User → Next.js (Vercel) → Vana SDK → Data Sources → AI Engine → Soul C
 ## 📁 Project Structure
 
 ```
-vana-soul/
+nodea/
 ├── src/
 │   ├── app/
 │   │   ├── page.tsx              # Main UI — source connect + card

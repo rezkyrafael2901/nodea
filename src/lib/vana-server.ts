@@ -64,9 +64,9 @@ export function createVanaController(sourceId: string, mode: "web" | "full" = "w
     network: process.env.VANA_NETWORK === "moksha" ? "moksha" : "mainnet",
     appPrivateKey: process.env.VANA_APP_PRIVATE_KEY,
     app: {
-      id: process.env.VANA_APP_ID || "vana-soul",
-      name: process.env.VANA_APP_NAME || "Vana Soul",
-      homepageUrl: process.env.VANA_APP_URL || "https://vana-soul.vercel.app",
+      id: process.env.VANA_APP_ID || "nodea",
+      name: process.env.VANA_APP_NAME || "Nodea",
+      homepageUrl: process.env.VANA_APP_URL || "https://nodea.vercel.app",
     },
     source: sourceId,
     scopes: scopes,

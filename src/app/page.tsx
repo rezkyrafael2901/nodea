@@ -23,9 +23,9 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
   const hasCard = Boolean(score || grade || ref);
   const title = hasCard
     ? ref
-      ? `Vana Soul — Can you beat Grade ${ref}?`
-      : `Vana Soul — Soul Score ${score ? `${score}/100` : ""}${grade ? ` · Grade ${grade}` : ""}`
-    : "Vana Soul — Your Digital Identity Card";
+      ? `Nodea — Can you beat Grade ${ref}?`
+      : `Nodea — Soul Score ${score ? `${score}/100` : ""}${grade ? ` · Grade ${grade}` : ""}`
+    : "Nodea — Your Digital Identity Card";
   const description = hasCard
     ? "Connect your data across Vana and generate your own Soul Card. Beat this score!"
     : "Connect GitHub, Instagram, ChatGPT, Spotify, YouTube and Steam. Get one card that reflects your real digital self.";
@@ -42,7 +42,7 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
           url: ogUrl,
           width: 1200,
           height: 630,
-          alt: "Vana Soul Card",
+          alt: "Nodea Card",
         },
       ],
     },

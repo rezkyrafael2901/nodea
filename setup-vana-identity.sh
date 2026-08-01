@@ -4,7 +4,7 @@
 
 set -e
 
-echo "👁️ Vana Soul - App Identity Setup"
+echo "👁️ Nodea - App Identity Setup"
 echo "=================================="
 echo ""
 
@@ -45,7 +45,7 @@ echo ""
 echo "Step 2: Register app at account.vana.org/developers"
 echo "  1. Go to https://account.vana.org/developers"
 echo "  2. Connect your wallet"
-echo "  3. Register app: 'Vana Soul'"
+echo "  3. Register app: 'Nodea'"
 echo "  4. Set icon and description"
 echo "  5. Note your app ID/grantee address"
 echo ""
@@ -54,7 +54,7 @@ echo "  Bridge USDC.e to your app escrow address"
 echo "  For testnet: use Moksha faucet for VANA"
 echo ""
 echo "Step 4: Update .env.local with:"
-echo "  VANA_APP_NAME=Vana Soul"
+echo "  VANA_APP_NAME=Nodea"
 echo "  VANA_NETWORK=mainnet"
 echo "  VANA_ESCROW_USDC=<your_escrow_address>"
 echo "  VANA_PRIVATE_KEY=<your_private_key>"

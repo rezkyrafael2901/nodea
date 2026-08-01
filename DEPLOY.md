@@ -1,4 +1,4 @@
-# 🚀 Vana Soul — Deploy Instructions
+# 🚀 Nodea — Deploy Instructions
 
 ## Quick Deploy to Vercel (5 minutes)
 
@@ -10,7 +10,7 @@
    ```
    VANA_NETWORK=mainnet
    VANA_PRIVATE_KEY=your_vana_wallet_key
-   VANA_APP_NAME=Vana Soul
+   VANA_APP_NAME=Nodea
    AI_PROVIDER=anthropic
    ANTHROPIC_API_KEY=your_api_key_here
    ```
@@ -20,7 +20,7 @@
 ### Option B: Vercel CLI
 
 ```bash
-cd vana-soul
+cd nodea
 
 # Login
 vercel login
@@ -41,7 +41,7 @@ Set env vars in Vercel Dashboard → Settings → Environment Variables
 After Vercel deploy, complete these for Vana Cup:
 
 - [ ] Register app at https://account.vana.org/developers
-  - App name: "Vana Soul"
+  - App name: "Nodea"
   - Description: "Multi-Source Digital Identity Card"
   - Website: https://your-app.vercel.app
   - Grant EVM wallet (from VANA_PRIVATE_KEY)
@@ -52,7 +52,7 @@ After Vercel deploy, complete these for Vana Cup:
 
 - [ ] Complete listing fields
   - Icon: Create a simple eye/soul icon
-  - Name: Vana Soul
+  - Name: Nodea
   - Description: as above
 
 - [ ] Verify data flow works

@@ -26,7 +26,7 @@ export function DataSoulCard({ data }: { data: SoulCardData }) {
         <div className="flex items-start justify-between">
           <div>
             <h3 className="text-xl font-bold" style={{ color: palette[0] }}>
-              VANA SOUL
+              NODEA
             </h3>
             <p className="text-sm mt-1">{String(d.soul_tagline || "Loading...")}</p>
           </div>

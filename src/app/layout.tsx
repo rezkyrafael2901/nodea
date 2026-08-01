@@ -13,10 +13,10 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Vana Soul — Your Digital Identity Card",
+  title: "Nodea — Your Digital Identity Card",
   description: "Connect your accounts across Vana and get a unified identity card — built from your real activity, not a questionnaire.",
   openGraph: {
-    title: "Vana Soul — Your Digital Identity Card",
+    title: "Nodea — Your Digital Identity Card",
     description: "Connect GitHub, Instagram, ChatGPT, Spotify, YouTube and Steam. Get one card that reflects your real digital self.",
     type: "website",
     images: [
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
         url: "/api/og.png",
         width: 1200,
         height: 630,
-        alt: "Vana Soul Card",
+        alt: "Nodea Card",
       },
     ],
   },
