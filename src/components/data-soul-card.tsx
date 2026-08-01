@@ -128,10 +128,21 @@ export function DataSoulCard({ data }: { data: SoulCardData }) {
       {/* Actions */}
       <div className="flex gap-3 mt-4">
         <button className="flex-1 py-2.5 bg-violet-600/20 border border-violet-500/30 hover:bg-violet-600/30 rounded-lg text-sm font-medium transition-colors">
-          📥 Export PNG
+          <span className="inline-flex items-center justify-center gap-2">
+            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4" aria-hidden="true">
+              <path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z" />
+              <path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+            </svg>
+            Export PNG
+          </span>
         </button>
         <button className="flex-1 py-2.5 bg-white/5 border border-white/10 hover:bg-white/10 rounded-lg text-sm font-medium transition-colors">
-          🔗 Share to X
+          <span className="inline-flex items-center justify-center gap-2">
+            <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden="true">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+            Share to X
+          </span>
         </button>
       </div>
     </div>

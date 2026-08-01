@@ -1,24 +1,36 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "Vana Soul — Multi-Source Identity Card",
-  description: "Connect everything. See who you really are in one card.",
+  title: "Vana Soul — Your Digital Identity Card",
+  description: "Connect your accounts across Vana and get a unified identity card — built from your real activity, not a questionnaire.",
   openGraph: {
-    title: "Vana Soul",
-    description: "Connect GitHub, Instagram, ChatGPT, Spotify, YouTube. See your soul.",
+    title: "Vana Soul — Your Digital Identity Card",
+    description: "Connect GitHub, Instagram, ChatGPT, Spotify, YouTube and Steam. Get one card that reflects your real digital self.",
     type: "website",
+    images: [
+      {
+        url: "/api/og.png",
+        width: 1200,
+        height: 630,
+        alt: "Vana Soul Card",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/api/og.png"],
   },
 };
 
@@ -30,7 +42,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#0a0a0a] text-white min-h-screen`}
+        className={`${inter.variable} ${spaceGrotesk.variable} antialiased bg-[#0a0a0a] text-white min-h-screen`}
       >
         {children}
       </body>

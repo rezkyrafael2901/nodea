@@ -1,4 +1,7 @@
-onlyBuiltDependencies:
-  - secp256k1
-  - sharp
-  - unrs-resolver
+packages:
+  - .
+
+allowBuilds:
+  sharp: true
+  secp256k1: true
+  unrs-resolver: true

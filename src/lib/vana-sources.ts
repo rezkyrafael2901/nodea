@@ -1,72 +1,138 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import type { BrandId } from "@/components/brand-icons";
 
-// Source definitions
+// Platform mode — determines whether a source works without Vana Desktop
+//   web     → server-side collection (ODL Data Pipe) — works on mobile & web, zero-install
+//   desktop → client-side collection (Playwright in Vana Desktop) — deep data, desktop only
+export type PlatformMode = "web" | "desktop" | "hybrid";
+
+// Handle pattern (Patina-style) — user pastes a profile link, we trim it to the handle
+export interface HandlePattern {
+  prefix: string;        // e.g. "youtube.com/@"
+  placeholder: string;   // input placeholder
+  urlTemplate: string;   // e.g. "https://www.youtube.com/@{handle}"
+  hint: string;          // guidance shown under the field
+}
+
 export interface DataSource {
   id: string;
   name: string;
-  icon: string;
+  icon: BrandId;
   description: string;
-  scopes: string[];
+  scopes: string[];          // web-mode scopes (server-side collectible)
+  desktopScopes?: string[];  // full/deep scopes (desktop only)
   maturity: "stable" | "beta" | "experimental";
   onboarded: boolean;
+  platform: PlatformMode;
+  handle: HandlePattern | null;   // how to tell the user what to paste (null = no handle, use findIt)
+  findIt: string[] | null;        // instructions when there's no handle to paste
 }
 
 export const DATA_SOURCES: DataSource[] = [
   {
     id: "github",
     name: "GitHub",
-    icon: "🐙",
-    description: "Code, commits, stars, repos, history",
-    scopes: ["github.contributions", "github.events", "github.history", "github.profile", "github.repositories", "github.starred"],
+    icon: "github",
+    description: "When you joined and what you have built.",
+    scopes: ["github.profile"],
+    desktopScopes: ["github.contributions", "github.events", "github.history", "github.profile", "github.repositories", "github.starred"],
     maturity: "stable",
     onboarded: false,
+    platform: "web",
+    handle: {
+      prefix: "github.com/",
+      placeholder: "yourusername or paste profile link",
+      urlTemplate: "https://github.com/{handle}",
+      hint: "Your GitHub username, or paste your profile link.",
+    },
+    findIt: null,
   },
   {
     id: "instagram",
     name: "Instagram",
-    icon: "📸",
-    description: "Posts, followers, following, ads, profile",
-    scopes: ["instagram.profile", "instagram.posts", "instagram.following", "instagram.ads"],
+    icon: "instagram",
+    description: "How much you post, and how many follow you.",
+    scopes: ["instagram.profile", "instagram.posts"],
+    desktopScopes: ["instagram.profile", "instagram.posts", "instagram.following", "instagram.ads"],
     maturity: "stable",
     onboarded: false,
-  },
-  {
-    id: "chatgpt",
-    name: "ChatGPT",
-    icon: "🤖",
-    description: "Conversation history, saved memories",
-    scopes: ["chatgpt.conversations", "chatgpt.memories"],
-    maturity: "stable",
-    onboarded: false,
+    platform: "web",
+    handle: {
+      prefix: "instagram.com/",
+      placeholder: "yourusername or paste profile link",
+      urlTemplate: "https://www.instagram.com/{handle}",
+      hint: "Your username, or paste your profile link. Reels/posts links are fine — we trim them.",
+    },
+    findIt: null,
   },
   {
     id: "spotify",
     name: "Spotify",
-    icon: "🎵",
-    description: "Playlists, profile, saved tracks",
-    scopes: ["spotify.playlists", "spotify.profile", "spotify.savedTracks"],
+    icon: "spotify",
+    description: "A listening life.",
+    scopes: ["spotify.profile"],
+    desktopScopes: ["spotify.playlists", "spotify.profile", "spotify.savedTracks"],
     maturity: "stable",
     onboarded: false,
+    platform: "web",
+    handle: null,
+    findIt: [
+      "Open Spotify and go to your own profile.",
+      "Tap the three dots, then Share, then Copy link to profile.",
+      "Come back here and paste it on the Vana page when it asks.",
+    ],
   },
   {
     id: "youtube",
     name: "YouTube",
-    icon: "▶️",
-    description: "Watch history, likes, playlists, subscriptions",
-    scopes: ["youtube.history", "youtube.likes", "youtube.playlists", "youtube.profile", "youtube.subscriptions", "youtube.watchLater"],
+    icon: "youtube",
+    description: "The day your account was opened — and deeper history on desktop.",
+    scopes: ["youtube.profile"],
+    desktopScopes: ["youtube.history", "youtube.likes", "youtube.playlists", "youtube.profile", "youtube.subscriptions", "youtube.watchLater"],
     maturity: "beta",
     onboarded: false,
+    platform: "hybrid",
+    handle: {
+      prefix: "youtube.com/@",
+      placeholder: "yourhandle or paste channel link",
+      urlTemplate: "https://www.youtube.com/@{handle}",
+      hint: "Paste your channel link if you have one (works for /@, /channel/, /c/). Or type the @ handle from your picture menu.",
+    },
+    findIt: null,
   },
   {
     id: "steam",
     name: "Steam",
-    icon: "🎮",
-    description: "Games, playtime, friends, profile",
+    icon: "steam",
+    description: "Games, playtime & friends — deep data via Vana Desktop.",
     scopes: ["steam.profile", "steam.games", "steam.friends"],
     maturity: "experimental",
     onboarded: false,
+    platform: "desktop",
+    handle: null,
+    findIt: [
+      "Install Vana Desktop on your computer (vana.org/desktop).",
+      "Open the app, connect Steam under your sources.",
+      "Come back here and connect — your data is already synced.",
+    ],
+  },
+  {
+    id: "chatgpt",
+    name: "ChatGPT",
+    icon: "chatgpt",
+    description: "Conversations & memories — deep data via Vana Desktop.",
+    scopes: ["chatgpt.conversations", "chatgpt.memories"],
+    maturity: "experimental",
+    onboarded: false,
+    platform: "desktop",
+    handle: null,
+    findIt: [
+      "Install Vana Desktop on your computer (vana.org/desktop).",
+      "Open the app, connect ChatGPT under your sources.",
+      "Come back here and connect — your data is already synced.",
+    ],
   },
 ];
 

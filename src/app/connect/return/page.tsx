@@ -19,7 +19,7 @@ function ReturnContent() {
 
   useEffect(() => {
     const sourceId = searchParams.get("source");
-    const requestId = searchParams.get("requestId") || searchParams.get("dcr_id");
+    const requestId = searchParams.get("requestId") || searchParams.get("dcr_id") || searchParams.get("dcrId");
     const error = searchParams.get("error");
     const denied = searchParams.get("denied");
 
@@ -29,13 +29,26 @@ function ReturnContent() {
       return;
     }
 
-    if (!sourceId || !requestId) {
-      setStatus("error");
-      setMessage("Missing connection parameters. Please try again.");
+    if (!sourceId) {
+      // Vana sometimes redirects without params — polling in the main tab
+      // is the source of truth, so just send the opener a generic signal.
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage({ type: "vana-connect-returned" }, "*");
+      }
+      setStatus("success");
+      setMessage("Returning to your app…");
+      setTimeout(() => {
+        if (window.opener && !window.opener.closed) {
+          window.close();
+        } else {
+          router.push("/");
+        }
+      }, 800);
       return;
     }
 
-    // Notify the opener (main app tab) that the user approved
+    // Notify the opener (main app tab) that the user is back.
+    // Polling in the main tab is the primary mechanism; this is a nudge.
     if (window.opener && !window.opener.closed) {
       window.opener.postMessage(
         {
@@ -55,7 +68,9 @@ function ReturnContent() {
       setMessage("Connection approved! Redirecting back to app...");
       setTimeout(() => {
         const baseUrl = window.location.origin;
-        router.push(`${baseUrl}/?connect=return&source=${sourceId}&requestId=${requestId}`);
+        const q = new URLSearchParams({ source: sourceId });
+        if (requestId) q.set("requestId", requestId);
+        router.push(`${baseUrl}/?connect=return&${q.toString()}`);
       }, 1000);
     }
   }, [searchParams, router]);

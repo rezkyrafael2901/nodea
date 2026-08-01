@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <defs>
+    <linearGradient id="soul-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="50%" stop-color="#d946ef"/>
+      <stop offset="100%" stop-color="#f472b6"/>
+    </linearGradient>
+  </defs>
+  <rect width="48" height="48" rx="12" fill="#0a0a0a"/>
+  <path d="M24 6 L40 18 L24 42 L8 18 Z" fill="url(#soul-grad)"/>
+  <path d="M24 6 L24 42" stroke="#ffffff" stroke-opacity="0.35" stroke-width="1.2"/>
+  <path d="M8 18 L40 18" stroke="#ffffff" stroke-opacity="0.3" stroke-width="1"/>
+  <circle cx="24" cy="24" r="4.5" fill="#ffffff" opacity="0.9"/>
+  <circle cx="24" cy="24" r="2" fill="#fdf4ff"/>
+</svg>

@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const requestId = searchParams.get("requestId");
     const sourceId = searchParams.get("sourceId");
+    const mode = searchParams.get("mode") === "full" ? "full" : "web";
 
     if (!requestId) {
       return NextResponse.json({ error: "Missing requestId" }, { status: 400 });
@@ -39,12 +40,13 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const controller = createVanaController(sourceId);
+    const controller = createVanaController(sourceId, mode);
     const result = await controller.readApprovedData({ requestId });
 
     return NextResponse.json({
       ...result,
       sourceId,
+      mode,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {

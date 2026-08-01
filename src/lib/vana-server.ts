@@ -8,18 +8,39 @@
 import { createDirectDataController } from "@opendatalabs/vana-sdk/server";
 import type { DirectDataController, DirectDataControllerConfig } from "@opendatalabs/vana-sdk/server";
 
-// Valid source IDs with their scopes
-const SOURCE_SCOPES: Record<string, string[]> = {
-  github: ["github.contributions", "github.events", "github.history", "github.profile", "github.repositories", "github.starred"],
-  instagram: ["instagram.profile", "instagram.posts", "instagram.following", "instagram.ads"],
-  chatgpt: ["chatgpt.conversations", "chatgpt.memories"],
-  spotify: ["spotify.playlists", "spotify.profile", "spotify.savedTracks"],
-  youtube: ["youtube.history", "youtube.likes", "youtube.playlists", "youtube.profile", "youtube.subscriptions", "youtube.watchLater"],
-  steam: ["steam.profile", "steam.games", "steam.friends"],
+// Scope map — web-mode scopes (server-side collectible via ODL Data Pipe,
+// works without Vana Desktop, mobile-friendly) vs full/deep scopes.
+const SOURCE_SCOPES: Record<string, { web: string[]; full: string[] }> = {
+  github: {
+    web: ["github.profile"],
+    full: ["github.contributions", "github.events", "github.history", "github.profile", "github.repositories", "github.starred"],
+  },
+  instagram: {
+    web: ["instagram.profile", "instagram.posts"],
+    full: ["instagram.profile", "instagram.posts", "instagram.following", "instagram.ads"],
+  },
+  chatgpt: {
+    web: ["chatgpt.conversations"],
+    full: ["chatgpt.conversations", "chatgpt.memories"],
+  },
+  spotify: {
+    web: ["spotify.profile"],
+    full: ["spotify.playlists", "spotify.profile", "spotify.savedTracks"],
+  },
+  youtube: {
+    web: ["youtube.profile"],
+    full: ["youtube.history", "youtube.likes", "youtube.playlists", "youtube.profile", "youtube.subscriptions", "youtube.watchLater"],
+  },
+  steam: {
+    web: ["steam.profile"],
+    full: ["steam.profile", "steam.games", "steam.friends"],
+  },
 };
 
-export function getSourceScopes(sourceId: string): string[] | null {
-  return SOURCE_SCOPES[sourceId] ?? null;
+export function getSourceScopes(sourceId: string, mode: "web" | "full" = "web"): string[] | null {
+  const entry = SOURCE_SCOPES[sourceId];
+  if (!entry) return null;
+  return mode === "full" ? entry.full : entry.web;
 }
 
 export function isValidSource(sourceId: string): boolean {
@@ -29,11 +50,11 @@ export function isValidSource(sourceId: string): boolean {
 /**
  * Create a Vana DirectDataController for a specific source.
  *
- * Each controller is scoped to ONE source + its scopes.
- * For multi-source apps, create a new controller per source per request.
+ * mode: "web" (default) — server-side collectible scopes, works on mobile & web.
+ *       "full" — all scopes for the source (deep data, may need Vana Desktop).
  */
-export function createVanaController(sourceId: string): DirectDataController {
-  const scopes = getSourceScopes(sourceId);
+export function createVanaController(sourceId: string, mode: "web" | "full" = "web"): DirectDataController {
+  const scopes = getSourceScopes(sourceId, mode);
   if (!scopes) {
     throw new Error(`Unknown source: ${sourceId}`);
   }

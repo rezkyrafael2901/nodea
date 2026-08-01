@@ -4,7 +4,9 @@
  * Creates a Vana access request for a specific data source.
  * The user will approve this in a separate browser tab via approvalUrl.
  *
- * Body: { sourceId: string }
+ * Body: { sourceId: string, mode?: "web" | "full" }
+ *   mode "web"  (default) — server-side collectible scopes, works on mobile & web.
+ *   mode "full"           — all scopes (deep data, may require Vana Desktop).
  * Returns: { requestId: string, approvalUrl: string, appAddress: string }
  */
 
@@ -14,7 +16,7 @@ import { createVanaController, isValidSource } from "@/lib/vana-server";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { sourceId } = body;
+    const { sourceId, mode = "web" } = body;
 
     if (!sourceId || !isValidSource(sourceId)) {
       return NextResponse.json(
@@ -30,17 +32,18 @@ export async function POST(request: NextRequest) {
           error: "Vana app private key not configured. Set VANA_APP_PRIVATE_KEY in environment.",
           devMode: true,
           sourceId,
+          mode,
         },
         { status: 501 }
       );
     }
 
-    // Create a controller for this specific source
-    const controller = createVanaController(sourceId);
+    // Create a controller for this specific source + mode
+    const controller = createVanaController(sourceId, mode === "full" ? "full" : "web");
 
     // Create the access request with a return URL pointing back to our app
     const baseUrl = process.env.VANA_APP_URL || "https://vana-soul.vercel.app";
-    const returnUrl = `${baseUrl}/connect/return?source=${sourceId}`;
+    const returnUrl = `${baseUrl}/connect/return?source=${sourceId}&mode=${mode}`;
 
     const request_data = await controller.createAccessRequest({ returnUrl });
 
@@ -49,6 +52,7 @@ export async function POST(request: NextRequest) {
       approvalUrl: request_data.approvalUrl,
       appAddress: request_data.appAddress,
       sourceId,
+      mode,
     });
   } catch (error) {
     console.error("Vana request error:", error);
