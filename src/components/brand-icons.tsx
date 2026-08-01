@@ -20,7 +20,7 @@ const BRAND_COLORS: Record<BrandId, string> = {
   chatgpt: "#10A37F",
   spotify: "#1DB954",
   youtube: "#FF0000",
-  steam: "#1B2838",
+  steam: "#66C0F4",
 };
 
 const PATHS: Record<BrandId, string> = {
@@ -73,7 +73,7 @@ export function BrandIconTile({ id, size = 44, className }: { id: BrandId; size?
     chatgpt: "bg-[#10A37F]/15",
     spotify: "bg-[#1DB954]/15",
     youtube: "bg-[#FF0000]/15",
-    steam: "bg-white/[0.06]",
+    steam: "bg-[#66C0F4]/15",
   };
 
   const iconColor: Record<BrandId, string> = {
@@ -82,7 +82,7 @@ export function BrandIconTile({ id, size = 44, className }: { id: BrandId; size?
     chatgpt: "text-[#10A37F]",
     spotify: "text-[#1DB954]",
     youtube: "text-[#FF0000]",
-    steam: "text-white",
+    steam: "text-[#66C0F4]",
   };
 
   return (
