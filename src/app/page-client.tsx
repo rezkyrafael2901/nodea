@@ -669,7 +669,7 @@ export default function PageClient() {
         {/* Header */}
         <header className="border-b border-white/[0.06] backdrop-blur-sm bg-[#0a0a0a]/70 sticky top-0">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-            <AppWordmark size={34} />
+            <AppWordmark size={48} />
             <div className="flex items-center gap-3">
               <div className="text-sm text-white/50">
                 <span className="font-medium text-white">{connectedCount}</span>

@@ -56,7 +56,7 @@ export function AppWordmark({ size = 32, className }: { size?: number; className
     <div className={`flex items-center gap-2.5 ${className ?? ""}`}>
       <AppLogo size={size} />
       <div className="leading-none">
-        <div className="font-semibold tracking-tight text-white" style={{ fontSize: size * 0.42 }}>
+        <div className="font-bold tracking-tight text-white" style={{ fontSize: size * 0.5 }}>
           Nodea
         </div>
         <div className="text-[10px] uppercase tracking-[0.2em] text-white/40 mt-1">
