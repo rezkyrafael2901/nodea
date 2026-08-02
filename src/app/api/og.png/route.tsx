@@ -4,6 +4,39 @@ import { parseOgParams } from "@/lib/og-card";
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
+const THEME_BG: Record<string, string> = {
+  midnight: "linear-gradient(135deg, #0a0a0a, #16213e)",
+  neon: "linear-gradient(135deg, #0f0c29, #24243e)",
+  glass: "linear-gradient(135deg, #101418, #1c2530)",
+};
+
+const THEME_CARD_BG: Record<string, string> = {
+  midnight: "rgba(255,255,255,0.06)",
+  neon: "rgba(168,85,247,0.12)",
+  glass: "rgba(255,255,255,0.07)",
+};
+
+const THEME_CARD_BORDER: Record<string, string> = {
+  midnight: "1px solid rgba(255,255,255,0.15)",
+  neon: "1px solid rgba(168,85,247,0.6)",
+  glass: "1px solid rgba(255,255,255,0.3)",
+};
+
+const TRAIT_EMOJIS: Record<string, string> = {
+  "full-stacker": "⚡", "culture-vulture": "🦅", "creator-core": "✨",
+  "play-hard": "🎯", "digital-native": "🧬", "aesthetic-machine": "🎨",
+  "multiplayer-life": "👥", "polymath": "🧠", "omni-channel": "🌐",
+  github: "💻", instagram: "📸", chatgpt: "🤖", spotify: "🎵", youtube: "▶️", steam: "🎮",
+};
+
+const TRAIT_LABELS: Record<string, string> = {
+  "full-stacker": "Full Stacker", "culture-vulture": "Culture Vulture", "creator-core": "Creator Core",
+  "play-hard": "Play Hard", "digital-native": "Digital Native", "aesthetic-machine": "Aesthetic Machine",
+  "multiplayer-life": "Multiplayer Life", "polymath": "Polymath", "omni-channel": "Omni-Channel",
+  github: "Builder", instagram: "Visual Storyteller", chatgpt: "AI Native", spotify: "Tastemaker",
+  youtube: "Binge Curator", steam: "Gamer",
+};
+
 function getPalette(mood: string): string[] {
   const palettes: Record<string, string[]> = {
     "creative": ["#FF6B6B", "#4ECDC4", "#45B7D1"],
@@ -43,6 +76,10 @@ export async function GET(request: Request) {
     grade === "B" ? "#38bdf8" :
     grade === "C" ? "#34d399" : "#a3a3a3";
 
+  const themeKey = ["midnight", "neon", "glass"].includes(p.theme || "") ? (p.theme as string) : "midnight";
+  const traitEmoji = TRAIT_EMOJIS[p.trait || ""] || "";
+  const traitLabel = TRAIT_LABELS[p.trait || ""] || "";
+
   const bars = [
     { label: "CREATIVE ↔ ANALYTICAL", v: clamp(p.creative_analytical ?? 72), c: "255,255,255" },
     { label: "SOCIAL ↔ SOLITARY", v: clamp(p.social_solitary ?? 58), c: "255,255,255" },
@@ -57,7 +94,7 @@ export async function GET(request: Request) {
           height: 630,
           display: "flex",
           flexDirection: "column",
-          background: `linear-gradient(135deg, ${palette[0]}, ${palette[1] || palette[0]})`,
+          background: THEME_BG[themeKey],
           fontFamily: "sans-serif",
           padding: 60,
         }}
@@ -67,8 +104,8 @@ export async function GET(request: Request) {
             flex: 1,
             display: "flex",
             flexDirection: "column",
-            background: "rgba(255,255,255,0.06)",
-            border: "1px solid rgba(255,255,255,0.15)",
+            background: THEME_CARD_BG[themeKey],
+            border: THEME_CARD_BORDER[themeKey],
             borderRadius: 24,
             padding: "48px 60px",
             position: "relative",
@@ -101,6 +138,29 @@ export async function GET(request: Request) {
 
           {/* Core identity */}
           <div style={{ fontSize: 20, color: "rgba(255,255,255,0.6)", marginTop: 28, display: "flex" }}>{coreIdentity}</div>
+
+          {/* Trait badge */}
+          {traitLabel ? (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.15)",
+                borderRadius: 20,
+                padding: "6px 16px",
+                fontSize: 15,
+                fontWeight: 600,
+                color: "white",
+                marginTop: 16,
+                alignSelf: "flex-start",
+              }}
+            >
+              <span>{traitEmoji}</span>
+              <span>{traitLabel}</span>
+            </div>
+          ) : null}
 
           {/* Source badges */}
           <div style={{ display: "flex", gap: 20, marginTop: 24 }}>

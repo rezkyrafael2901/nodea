@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { DATA_SOURCES, type DataSource, type IdentityData, buildIdentityPrompt, getPalette } from "@/lib/vana-sources";
 import { computeSoulScore } from "@/lib/soul-score";
+import { getTraits, getTopTrait, type Trait } from "@/lib/traits";
 import { DataSoulCard } from "@/components/data-soul-card";
 import { BrandIconTile, BrandIcon, type BrandId } from "@/components/brand-icons";
 import { AppLogo, AppWordmark } from "@/components/app-logo";
@@ -27,6 +28,14 @@ export default function PageClient() {
 
   // Device detection — desktop = fine pointer (mouse/trackpad). Mobile = coarse.
   const [isDesktop, setIsDesktop] = useState(true);
+
+  // Card theme selection (OG card variants)
+  const [cardTheme, setCardTheme] = useState<string>("midnight");
+  const THEME_OPTIONS = [
+    { id: "midnight", label: "Midnight", swatch: "bg-gradient-to-br from-[#0a0a0a] to-[#16213e]" },
+    { id: "neon", label: "Neon", swatch: "bg-gradient-to-br from-[#0f0c29] via-[#24243e] to-[#a855f7]/60" },
+    { id: "glass", label: "Glass", swatch: "bg-gradient-to-br from-[#101418] to-[#1c2530] border border-white/25" },
+  ];
 
   useEffect(() => {
     const mq = window.matchMedia("(pointer: fine)");
@@ -417,10 +426,13 @@ export default function PageClient() {
     if (identities.length > 0) {
       p.set("sources", identities.map((i) => i.source).join(","));
     }
+    p.set("theme", cardTheme);
+    const topTrait = getTopTrait(identities.map((i) => i.source));
+    if (topTrait) p.set("trait", topTrait.id);
     p.set("score", String(soulScore.total));
     p.set("grade", soulScore.grade);
     return p.toString();
-  }, [identityResult, identities, soulScore]);
+  }, [identityResult, identities, soulScore, cardTheme]);
 
   const cardLink = useCallback(() => {
     return `${window.location.origin}/?ref=${soulScore.grade}${soulScore.total}`;
@@ -428,7 +440,9 @@ export default function PageClient() {
 
   const shareCard = async () => {
     const url = cardLink();
-    const text = `My Nodea Score: Grade ${soulScore.grade} · ${soulScore.total}/100 — ${soulScore.verdict}`;
+    const topTrait = getTopTrait(identities.map((i) => i.source));
+    const traitText = topTrait ? ` · ${topTrait.emoji} ${topTrait.name}` : "";
+    const text = `My Nodea Score: Grade ${soulScore.grade} · ${soulScore.total}/100 — ${soulScore.verdict}${traitText}. Try to beat it!`;
     try {
       if (navigator.share) {
         await navigator.share({ title: "Nodea", text, url });
@@ -858,7 +872,53 @@ export default function PageClient() {
 
               {identityResult ? (
                 <>
+                  {/* Theme picker */}
+                  <div className="mb-4">
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-white/40 mb-2">Card style</div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {THEME_OPTIONS.map((t) => (
+                        <button
+                          key={t.id}
+                          onClick={() => setCardTheme(t.id)}
+                          className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all ${
+                            cardTheme === t.id
+                              ? "border-violet-400/60 bg-violet-500/10"
+                              : "border-white/10 bg-white/[0.02] hover:border-white/25"
+                          }`}
+                        >
+                          <span className={`w-full h-7 rounded-lg ${t.swatch}`} />
+                          <span className={`text-[10px] ${cardTheme === t.id ? "text-violet-300" : "text-white/40"}`}>{t.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                   <DataSoulCard data={identityResult as Record<string, unknown>} />
+                  {/* Trait badges */}
+                  {identities.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {getTraits(identities.map((i) => i.source)).map((t: Trait) => (
+                        <span
+                          key={t.id}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium border ${
+                            t.rarity === "epic"
+                              ? "bg-amber-500/10 border-amber-500/30 text-amber-300"
+                              : t.rarity === "rare"
+                              ? "bg-violet-500/10 border-violet-500/30 text-violet-300"
+                              : "bg-white/[0.04] border-white/10 text-white/50"
+                          }`}
+                          title={t.desc}
+                        >
+                          <span>{t.emoji}</span>
+                          {t.name}
+                          {t.rarity !== "common" && (
+                            <span className={`text-[8px] uppercase tracking-wider ${t.rarity === "epic" ? "text-amber-400/80" : "text-violet-400/80"}`}>
+                              {t.rarity}
+                            </span>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   {/* Share actions */}
                   <div className="mt-4 grid grid-cols-2 gap-2">
                     <button

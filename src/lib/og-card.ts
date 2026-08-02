@@ -24,6 +24,8 @@ export interface OgCardParams {
   aesthetic?: string;
   tagline?: string;
   mood?: string;
+  theme?: string;
+  trait?: string;
   creative_analytical?: number;
   social_solitary?: number;
   consumer_creator?: number;
@@ -31,6 +33,54 @@ export interface OgCardParams {
   grade?: string;
   ref?: string;
 }
+
+// Theme presets — each changes bg gradient, card treatment, and accent text
+const THEMES: Record<string, { label: string; defs: string; card: string; bgA: string; bgB: string }> = {
+  midnight: {
+    label: "Midnight",
+    bgA: "#0a0a0a",
+    bgB: "#16213e",
+    defs: ``,
+    card: `fill="url(#card)" stroke="rgba(255,255,255,0.15)"`,
+  },
+  neon: {
+    label: "Neon",
+    bgA: "#0f0c29",
+    bgB: "#24243e",
+    defs: `
+      <radialGradient id="glow1" cx="0%" cy="0%" r="80%">
+        <stop offset="0%" stop-color="rgba(168,85,247,0.55)" />
+        <stop offset="100%" stop-color="rgba(168,85,247,0)" />
+      </radialGradient>
+      <radialGradient id="glow2" cx="100%" cy="100%" r="80%">
+        <stop offset="0%" stop-color="rgba(236,72,153,0.5)" />
+        <stop offset="100%" stop-color="rgba(236,72,153,0)" />
+      </radialGradient>`,
+    card: `fill="url(#card)" stroke="rgba(168,85,247,0.6)"`,
+  },
+  glass: {
+    label: "Glass",
+    bgA: "#101418",
+    bgB: "#1c2530",
+    defs: ``,
+    card: `fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.3)"`,
+  },
+};
+
+const TRAIT_EMOJIS: Record<string, string> = {
+  "full-stacker": "⚡", "culture-vulture": "🦅", "creator-core": "✨",
+  "play-hard": "🎯", "digital-native": "🧬", "aesthetic-machine": "🎨",
+  "multiplayer-life": "👥", "polymath": "🧠", "omni-channel": "🌐",
+  github: "💻", instagram: "📸", chatgpt: "🤖", spotify: "🎵", youtube: "▶️", steam: "🎮",
+};
+
+const TRAIT_LABELS: Record<string, string> = {
+  "full-stacker": "Full Stacker", "culture-vulture": "Culture Vulture", "creator-core": "Creator Core",
+  "play-hard": "Play Hard", "digital-native": "Digital Native", "aesthetic-machine": "Aesthetic Machine",
+  "multiplayer-life": "Multiplayer Life", "polymath": "Polymath", "omni-channel": "Omni-Channel",
+  github: "Builder", instagram: "Visual Storyteller", chatgpt: "AI Native", spotify: "Tastemaker",
+  youtube: "Binge Curator", steam: "Gamer",
+};
 
 export function buildSoulCardSvg(p: OgCardParams): string {
   const sources = p.sources || "github,instagram";
@@ -45,6 +95,11 @@ export function buildSoulCardSvg(p: OgCardParams): string {
   const score = Math.max(0, Math.min(100, p.score ?? 0));
   const grade = (p.grade || "D").toUpperCase().slice(0, 1);
   const ref = (p.ref || "").substring(0, 30);
+
+  const themeKey = ["midnight", "neon", "glass"].includes(p.theme || "") ? (p.theme as string) : "midnight";
+  const theme = THEMES[themeKey];
+  const traitEmoji = TRAIT_EMOJIS[p.trait || ""] || "";
+  const traitLabel = TRAIT_LABELS[p.trait || ""] || "";
 
   const palette = getPalette(mood);
   const safeCoreIdentity = coreIdentity.substring(0, 120).replace(/"/g, "'").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -75,8 +130,8 @@ export function buildSoulCardSvg(p: OgCardParams): string {
     <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
       <defs>
         <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style="stop-color:${palette[0]};stop-opacity:1" />
-          <stop offset="100%" style="stop-color:${palette[1] || palette[0]};stop-opacity:1" />
+          <stop offset="0%" style="stop-color:${theme.bgA};stop-opacity:1" />
+          <stop offset="100%" style="stop-color:${theme.bgB};stop-opacity:1" />
         </linearGradient>
         <linearGradient id="card" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" style="stop-color:rgba(255,255,255,0.1)" />
@@ -86,13 +141,15 @@ export function buildSoulCardSvg(p: OgCardParams): string {
           <stop offset="0%" style="stop-color:${gradeColor}" />
           <stop offset="100%" style="stop-color:${palette[2] || "#ffffff"}" />
         </linearGradient>
+        ${theme.defs}
       </defs>
 
       <!-- Background -->
       <rect width="1200" height="630" fill="url(#bg)" />
+      ${themeKey === "neon" ? `<rect width="1200" height="630" fill="url(#glow1)" /><rect width="1200" height="630" fill="url(#glow2)" />` : ""}
 
       <!-- Card -->
-      <rect x="60" y="60" width="1080" height="510" rx="24" fill="url(#card)" stroke="rgba(255,255,255,0.15)" stroke-width="1" />
+      <rect x="60" y="60" width="1080" height="510" rx="24" ${theme.card} stroke-width="1" />
 
       <!-- Header -->
       <text x="120" y="140" font-family="system-ui,sans-serif" font-size="48" font-weight="800" fill="white">NODEA</text>
@@ -103,6 +160,12 @@ export function buildSoulCardSvg(p: OgCardParams): string {
       <text x="960" y="122" font-family="system-ui,sans-serif" font-size="16" font-weight="600" fill="rgba(255,255,255,0.5)">GRADE</text>
       <text x="960" y="152" font-family="system-ui,sans-serif" font-size="30" font-weight="800" fill="${gradeColor}">${grade}</text>
       <text x="1030" y="152" font-family="system-ui,sans-serif" font-size="22" font-weight="700" fill="white">${score}/100</text>
+
+      <!-- Trait badge -->
+      ${traitLabel ? `
+      <rect x="940" y="180" width="200" height="40" rx="20" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.15)" stroke-width="1" />
+      <text x="960" y="206" font-family="system-ui,sans-serif" font-size="16" font-weight="600" fill="white">${traitEmoji} ${traitLabel}</text>
+      ` : ""}
 
       <!-- Core Identity -->
       <text x="120" y="250" font-family="system-ui,sans-serif" font-size="22" fill="rgba(255,255,255,0.6)">${safeCoreIdentity}</text>
@@ -148,6 +211,8 @@ export function parseOgParams(searchParams: URLSearchParams): OgCardParams {
     aesthetic: searchParams.get("aesthetic") || undefined,
     tagline: searchParams.get("tagline") || undefined,
     mood: searchParams.get("mood") || undefined,
+    theme: searchParams.get("theme") || undefined,
+    trait: searchParams.get("trait") || undefined,
     creative_analytical: num(searchParams.get("creative_analytical"), 72),
     social_solitary: num(searchParams.get("social_solitary"), 58),
     consumer_creator: num(searchParams.get("consumer_creator"), 65),

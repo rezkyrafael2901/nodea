@@ -18,6 +18,10 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
   if (grade) qs.set("grade", grade);
   if (sources) qs.set("sources", sources);
   if (ref) qs.set("ref", ref);
+  const theme = str(sp.theme);
+  if (theme) qs.set("theme", theme);
+  const trait = str(sp.trait);
+  if (trait) qs.set("trait", trait);
   const ogUrl = `/api/og.png${qs.toString() ? `?${qs.toString()}` : ""}`;
 
   const hasCard = Boolean(score || grade || ref);
