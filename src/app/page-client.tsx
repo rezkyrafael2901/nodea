@@ -218,24 +218,21 @@ export default function PageClient() {
     try { window.localStorage.setItem("nodea-theme", theme); } catch {}
   }, [theme]);
 
-  // ── Scroll-spy for bottom nav (Patina-style tab bar) ──
-  const [activeTab, setActiveTab] = useState("hero");
-  useEffect(() => {
-    const ids = ["hero", "intro", "article", "connect", "how", "standings", "identity"];
-    const obs = new IntersectionObserver(
-      (entries) => {
-        const visible = entries.filter((e) => e.isIntersecting);
-        if (!visible.length) return;
-        const top = visible.sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        setActiveTab(top.target.id);
-      },
-      { rootMargin: "-40% 0px -55% 0px", threshold: [0, 0.02, 0.05, 0.15, 0.3, 0.5] }
-    );
-    ids.forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) obs.observe(el);
-    });
-    return () => obs.disconnect();
+  // ── Tab-based navigation (Patina-style bottom nav) ──
+  type ViewKey = "home" | "article" | "connect" | "card" | "standings";
+  const [view, setView] = useState<ViewKey>("home");
+
+  const goView = useCallback((v: ViewKey, anchor?: string) => {
+    setNavOpen(false);
+    setView(v);
+    setTimeout(() => {
+      if (anchor) {
+        const el = document.getElementById(anchor);
+        if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: "smooth" });
+      } else {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    }, 80);
   }, []);
 
   const [scrolled, setScrolled] = useState(false);
@@ -246,13 +243,6 @@ export default function PageClient() {
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  const scrollToSection = useCallback((id: string) => {
-    setNavOpen(false);
-    const el = document.getElementById(id);
-    if (!el) return;
-    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: "smooth" });
   }, []);
 
   // ── Nodea Tag identity (Patina-style sign-in, zero external OAuth) ──
@@ -1160,15 +1150,15 @@ export default function PageClient() {
               {/* Center nav (desktop) */}
               <nav className="hidden md:flex items-center gap-1">
                 {[
-                  { id: "connect", label: "Connect" },
-                  { id: "how", label: "How it works" },
-                  { id: "article", label: "Article" },
-                  { id: "standings", label: "Standings" },
-                  { id: "identity", label: "Your card" },
+                  { v: "connect", label: "Connect" },
+                  { v: "home", label: "How it works", anchor: "how" },
+                  { v: "article", label: "Article" },
+                  { v: "standings", label: "Standings" },
+                  { v: "card", label: "Your card" },
                 ].map((item) => (
                   <button
-                    key={item.id}
-                    onClick={() => scrollToSection(item.id)}
+                    key={item.label}
+                    onClick={() => goView(item.v as ViewKey, item.anchor)}
                     className="px-3.5 py-2 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/[0.05] transition-colors font-medium"
                   >
                     {item.label}
@@ -1187,7 +1177,7 @@ export default function PageClient() {
                 <motion.button
                   whileHover={reducedMotion ? {} : { scale: 1.03, y: -1 }}
                   whileTap={reducedMotion ? {} : { scale: 0.97 }}
-                  onClick={() => scrollToSection("connect")}
+                  onClick={() => goView("connect")}
                   className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-shadow duration-300"
                   style={{
                     background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)",
@@ -1229,22 +1219,22 @@ export default function PageClient() {
                 >
                   <div className="py-3 space-y-1 border-t border-white/[0.06]">
                     {[
-                      { id: "connect", label: "Connect" },
-                      { id: "how", label: "How it works" },
-                      { id: "article", label: "Article" },
-                      { id: "standings", label: "Standings" },
-                      { id: "identity", label: "Your card" },
+                      { v: "connect", label: "Connect" },
+                      { v: "home", label: "How it works", anchor: "how" },
+                      { v: "article", label: "Article" },
+                      { v: "standings", label: "Standings" },
+                      { v: "card", label: "Your card" },
                     ].map((item) => (
                       <button
-                        key={item.id}
-                        onClick={() => scrollToSection(item.id)}
+                        key={item.label}
+                        onClick={() => goView(item.v as ViewKey, item.anchor)}
                         className="w-full text-left px-3 py-2.5 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/[0.05] transition-colors font-medium"
                       >
                         {item.label}
                       </button>
                     ))}
                     <button
-                      onClick={() => scrollToSection("connect")}
+                      onClick={() => goView("connect")}
                       className="w-full mt-2 px-3 py-2.5 rounded-lg text-sm font-semibold text-white"
                       style={{ background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)" }}
                     >
@@ -1258,6 +1248,8 @@ export default function PageClient() {
         </motion.header>
 
         <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 md:py-20 lg:py-28">
+          {view === "home" && (
+            <>
           {/* ── Hero (Framer-style) ── */}
           <motion.section
             id="hero"
@@ -1311,7 +1303,7 @@ export default function PageClient() {
               <motion.button
                 whileHover={reducedMotion ? {} : { scale: 1.04, y: -2 }}
                 whileTap={reducedMotion ? {} : { scale: 0.97 }}
-                onClick={() => scrollToSection("connect")}
+                onClick={() => goView("connect")}
                 className="group inline-flex items-center gap-2.5 px-7 py-3.5 rounded-2xl text-base font-semibold text-white transition-shadow duration-300"
                 style={{
                   background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)",
@@ -1324,7 +1316,7 @@ export default function PageClient() {
               <motion.button
                 whileHover={reducedMotion ? {} : { scale: 1.03, y: -1 }}
                 whileTap={reducedMotion ? {} : { scale: 0.97 }}
-                onClick={() => scrollToSection("standings")}
+                onClick={() => goView("standings")}
                 className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-2xl text-base font-semibold text-white/80 border border-white/[0.1] bg-white/[0.03] hover:bg-white/[0.06] hover:text-white transition-colors"
               >
                 <Trophy className="w-5 h-5 text-amber-300" />
@@ -1468,7 +1460,11 @@ export default function PageClient() {
               ))}
             </div>
           </motion.section>
+            </>
+          )}
 
+          {view === "connect" && (
+            <>
           {/* ── Status / Error / Referral ── */}
           <AnimatePresence mode="wait">
             {statusMessage && (
@@ -1719,6 +1715,15 @@ export default function PageClient() {
                 </motion.section>
               </motion.div>
 
+              {/* Left panel close */}
+            </motion.div>
+            {/* Grid close */}
+          </motion.div>
+          </>
+        )}
+
+          {view === "home" && (
+            <>
               {/* How it Works (Patina-style 3-step) */}
               <motion.section
                 id="how"
@@ -1778,7 +1783,11 @@ export default function PageClient() {
                   ))}
                 </div>
               </motion.section>
+            </>
+          )}
 
+          {view === "standings" && (
+            <>
               {/* Nodea Tag + Reward + Leaderboard (Patina-style gamification) */}
               <motion.section
                 id="standings"
@@ -1952,7 +1961,11 @@ export default function PageClient() {
                   )}
                 </div>
               </motion.section>
+            </>
+          )}
 
+          {view === "card" && (
+            <>
               {/* Instruction Copy (Patina-style) */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -2049,7 +2062,6 @@ export default function PageClient() {
                   </motion.div>
                 </motion.div>
               )}
-            </motion.div>
 
             {/* Right: Score + Result Preview */}
             <motion.div
@@ -2283,9 +2295,12 @@ export default function PageClient() {
                 )}
               </AnimatePresence>
             </motion.div>
-          </motion.div>
+          </>
+        )}
         </main>
 
+        {view === "home" && (
+          <>
         {/* ── Features grid (Framer-style) ── */}
         <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-16 md:mt-24">
           <motion.div
@@ -2355,7 +2370,11 @@ export default function PageClient() {
             ))}
           </div>
         </section>
+          </>
+        )}
 
+        {view === "article" && (
+          <>
         {/* ── Article — Why data matters for AI ── */}
         <section id="article" className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 mt-20 md:mt-28 scroll-mt-24">
           <motion.article
@@ -2423,7 +2442,7 @@ export default function PageClient() {
 
               <div className="mt-8 flex flex-wrap items-center gap-4">
                 <button
-                  onClick={() => scrollToSection("connect")}
+                  onClick={() => goView("connect")}
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-shadow duration-300"
                   style={{ background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)", boxShadow: "0 8px 30px -8px rgba(79,140,255,0.5)" }}
                 >
@@ -2435,7 +2454,11 @@ export default function PageClient() {
             </div>
           </motion.article>
         </section>
+          </>
+        )}
 
+        {view === "home" && (
+          <>
         {/* ── Final CTA (Framer-style) ── */}
         <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-20 md:mt-28 mb-20 md:mb-28">
           <motion.div
@@ -2465,7 +2488,7 @@ export default function PageClient() {
               <motion.button
                 whileHover={reducedMotion ? {} : { scale: 1.04, y: -2 }}
                 whileTap={reducedMotion ? {} : { scale: 0.97 }}
-                onClick={() => scrollToSection("connect")}
+                onClick={() => goView("connect")}
                 className="mt-9 inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl text-base font-semibold text-white transition-shadow duration-300"
                 style={{
                   background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)",
@@ -2514,14 +2537,14 @@ export default function PageClient() {
                 <h4 className="text-xs font-semibold uppercase tracking-widest text-white/45 mb-4">Product</h4>
                 <ul className="space-y-2.5">
                   {[
-                    { label: "Connect", id: "connect" },
-                    { label: "How it works", id: "how" },
-                    { label: "Leaderboard", id: "standings" },
-                    { label: "Your card", id: "identity" },
+                    { label: "Connect", v: "connect" },
+                    { label: "How it works", v: "home", anchor: "how" },
+                    { label: "Leaderboard", v: "standings" },
+                    { label: "Your card", v: "card" },
                   ].map((l) => (
                     <li key={l.label}>
                       <button
-                        onClick={() => scrollToSection(l.id)}
+                        onClick={() => goView(l.v as ViewKey, l.anchor)}
                         className="text-sm text-white/50 hover:text-white transition-colors"
                       >
                         {l.label}
@@ -2537,7 +2560,7 @@ export default function PageClient() {
                   {DATA_SOURCES.slice(0, 5).map((s) => (
                     <li key={s.id}>
                       <button
-                        onClick={() => scrollToSection("connect")}
+                        onClick={() => goView("connect")}
                         className="text-sm text-white/50 hover:text-white transition-colors"
                       >
                         {s.name}
@@ -2567,6 +2590,8 @@ export default function PageClient() {
             </div>
           </div>
         </motion.footer>
+          </>
+        )}
 
         {/* ── Pre-flight Profile Link Check Modal ── */}
         <AnimatePresence>
@@ -2734,18 +2759,17 @@ export default function PageClient() {
         >
           <div className="mx-auto max-w-lg grid grid-cols-5">
             {[
-              { id: "hero", label: "Home", icon: Home },
-              { id: "article", label: "Article", icon: Newspaper },
-              { id: "connect", label: "Connect", icon: Plus },
-              { id: "identity", label: "Card", icon: CreditCard },
-              { id: "standings", label: "Standings", icon: Trophy },
+              { v: "home", label: "Home", icon: Home },
+              { v: "article", label: "Article", icon: Newspaper },
+              { v: "connect", label: "Connect", icon: Plus },
+              { v: "card", label: "Card", icon: CreditCard },
+              { v: "standings", label: "Standings", icon: Trophy },
             ].map((t) => {
-              const active =
-                t.id === "hero" ? activeTab === "hero" || activeTab === "intro" : activeTab === t.id;
+              const active = view === t.v;
               return (
                 <button
-                  key={t.id}
-                  onClick={() => scrollToSection(t.id)}
+                  key={t.v}
+                  onClick={() => goView(t.v as ViewKey)}
                   className={`flex flex-col items-center justify-center gap-1 pt-2.5 pb-2 transition-colors ${
                     active ? "text-cyan-400" : "text-white/45 hover:text-white/70"
                   }`}
