@@ -44,6 +44,7 @@ import {
   Brain,
   Users,
   UserPlus,
+  Menu,
   Monitor,
   Smartphone,
   Globe,
@@ -198,6 +199,23 @@ export default function PageClient() {
   const totalSources = DATA_SOURCES.length;
 
   const [refFrom, setRefFrom] = useState<string | null>(null);
+  const [navOpen, setNavOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  // scroll-shadow under the nav (Framer-style)
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const scrollToSection = useCallback((id: string) => {
+    setNavOpen(false);
+    const el = document.getElementById(id);
+    if (!el) return;
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: "smooth" });
+  }, []);
 
   // ── Nodea Tag identity (Patina-style sign-in, zero external OAuth) ──
   const [identity, setIdentity] = useState<NodeaIdentity | null>(null);
@@ -1127,77 +1145,146 @@ export default function PageClient() {
       </div>
 
       <div className="relative z-10">
-        {/* ── Header ── */}
+        {/* ── Header (Framer-style nav) ── */}
         <motion.header
           initial={{ y: -100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6, ease: easeOut }}
-          className="border-b border-white/[0.04] backdrop-blur-2xl bg-[#060608]/80 sticky top-0 z-50"
+          className={`sticky top-0 z-50 transition-all duration-300 ${
+            scrolled
+              ? "border-b border-white/[0.06] bg-[#060608]/85 backdrop-blur-2xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.6)]"
+              : "border-b border-transparent bg-transparent"
+          }`}
         >
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <AppWordmark size={52} />
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
-                className="flex items-center gap-4"
-              >
-                <div className="hidden sm:flex items-center gap-3 px-4 py-2 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-                  <motion.span
-                    animate={{ scale: [1, 1.05, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className="text-emerald-400 font-mono text-lg font-semibold"
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16 md:h-[72px]">
+              {/* Logo */}
+              <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="flex items-center gap-2.5 shrink-0">
+                <AppLogo size={34} />
+                <span className="font-display text-lg font-semibold tracking-tight text-white">Nodea</span>
+              </button>
+
+              {/* Center nav (desktop) */}
+              <nav className="hidden md:flex items-center gap-1">
+                {[
+                  { id: "connect", label: "Connect" },
+                  { id: "how", label: "How it works" },
+                  { id: "standings", label: "Standings" },
+                  { id: "identity", label: "Your card" },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => scrollToSection(item.id)}
+                    className="px-3.5 py-2 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/[0.05] transition-colors font-medium"
                   >
-                    {connectedCount}
-                  </motion.span>
-                  <span className="text-white/20 mx-1">/</span>
-                  <span className="text-white/50 font-mono text-lg">{totalSources}</span>
-                  <span className="text-[10px] uppercase tracking-wider text-white/30 ml-1">sources</span>
+                    {item.label}
+                  </button>
+                ))}
+              </nav>
+
+              {/* Right actions */}
+              <div className="flex items-center gap-3">
+                <div className="hidden sm:flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.07]">
+                  <span className="text-emerald-400 font-mono text-sm font-semibold">{connectedCount}</span>
+                  <span className="text-white/20">/</span>
+                  <span className="text-white/50 font-mono text-sm">{totalSources}</span>
+                  <span className="text-[9px] uppercase tracking-wider text-white/35 ml-0.5">connected</span>
                 </div>
-                <div className="h-1.5 w-32 sm:w-40 rounded-full bg-white/[0.04] overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${(connectedCount / totalSources) * 100}%` }}
-                    transition={{ delay: 0.4, duration: 1, ease: easeSpring }}
-                    className="h-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-cyan-500 rounded-full"
-                  />
-                </div>
-              </motion.div>
+                <motion.button
+                  whileHover={reducedMotion ? {} : { scale: 1.03, y: -1 }}
+                  whileTap={reducedMotion ? {} : { scale: 0.97 }}
+                  onClick={() => scrollToSection("connect")}
+                  className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-shadow duration-300"
+                  style={{
+                    background: "linear-gradient(135deg, #8b5cf6 0%, #d946ef 60%, #f472b6 100%)",
+                    boxShadow: "0 0 24px -6px rgba(168,85,247,0.55)",
+                  }}
+                >
+                  Connect your data
+                  <ArrowRight className="w-4 h-4" />
+                </motion.button>
+                {/* Mobile hamburger */}
+                <button
+                  onClick={() => setNavOpen((v) => !v)}
+                  className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08]"
+                  aria-label="Menu"
+                >
+                  {navOpen ? <X className="w-5 h-5 text-white/80" /> : <Menu className="w-5 h-5 text-white/80" />}
+                </button>
+              </div>
             </div>
+
+            {/* Mobile dropdown */}
+            <AnimatePresence>
+              {navOpen && (
+                <motion.nav
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25, ease: easeOut }}
+                  className="md:hidden overflow-hidden"
+                >
+                  <div className="py-3 space-y-1 border-t border-white/[0.06]">
+                    {[
+                      { id: "connect", label: "Connect" },
+                      { id: "how", label: "How it works" },
+                      { id: "standings", label: "Standings" },
+                      { id: "identity", label: "Your card" },
+                    ].map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => scrollToSection(item.id)}
+                        className="w-full text-left px-3 py-2.5 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/[0.05] transition-colors font-medium"
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => scrollToSection("connect")}
+                      className="w-full mt-2 px-3 py-2.5 rounded-lg text-sm font-semibold text-white"
+                      style={{ background: "linear-gradient(135deg, #8b5cf6 0%, #d946ef 60%, #f472b6 100%)" }}
+                    >
+                      Connect your data
+                    </button>
+                  </div>
+                </motion.nav>
+              )}
+            </AnimatePresence>
           </div>
         </motion.header>
 
         <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 md:py-20 lg:py-28">
-          {/* ── Hero ── */}
+          {/* ── Hero (Framer-style) ── */}
           <motion.section
+            id="hero"
             variants={sectionVariants}
             initial="initial"
             animate="animate"
-            className="text-center mb-16 md:mb-24"
+            className="relative text-center mb-20 md:mb-28 pt-6 md:pt-10"
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.1, duration: 0.5, ease: easeSpring }}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.02] text-xs text-white/50 mb-8"
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] text-xs text-white/60 mb-8"
             >
               <motion.span
-                animate={{ scale: [1, 1.2, 1] }}
+                animate={{ scale: [1, 1.3, 1] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
                 className="w-2 h-2 rounded-full bg-emerald-400"
               />
-              <span>Powered by Vana Data Portability</span>
+              <span>Live on Vana · Vana Cup 2026</span>
             </motion.div>
 
             <motion.h1
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.7, ease: easeOut }}
-              className="font-display-hero text-4xl md:text-6xl lg:text-7xl font-semibold tracking-tighter leading-[1.05] mb-6"
+              className="font-display-hero text-5xl md:text-7xl lg:text-[5.2rem] font-semibold tracking-tighter leading-[1.02] mb-6"
             >
-              <span className="gradient-white">Every source.</span>{" "}
-              <span className="gradient-white">One point.</span>
+              <span className="gradient-white">Every source.</span>
+              <br />
+              <span className="gradient-brand">One point.</span>
             </motion.h1>
 
             <motion.p
@@ -1206,15 +1293,58 @@ export default function PageClient() {
               transition={{ delay: 0.3, duration: 0.7, ease: easeOut }}
               className="tracking-ui text-lg md:text-xl lg:text-2xl text-white/50 max-w-3xl mx-auto leading-relaxed text-balance"
             >
-              Nodea connects your accounts across Vana into a single digital identity —
-              built from your real activity, not a questionnaire.
+              Nodea connects the accounts you already own across Vana into a single
+              digital identity — built from your <span className="text-white/85">real activity</span>, not a questionnaire.
+            </motion.p>
+
+            {/* CTA row */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.6, ease: easeOut }}
+              className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3"
+            >
+              <motion.button
+                whileHover={reducedMotion ? {} : { scale: 1.04, y: -2 }}
+                whileTap={reducedMotion ? {} : { scale: 0.97 }}
+                onClick={() => scrollToSection("connect")}
+                className="group inline-flex items-center gap-2.5 px-7 py-3.5 rounded-2xl text-base font-semibold text-white transition-shadow duration-300"
+                style={{
+                  background: "linear-gradient(135deg, #8b5cf6 0%, #d946ef 60%, #f472b6 100%)",
+                  boxShadow: "0 10px 40px -10px rgba(168,85,247,0.6)",
+                }}
+              >
+                Connect your accounts
+                <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
+              </motion.button>
+              <motion.button
+                whileHover={reducedMotion ? {} : { scale: 1.03, y: -1 }}
+                whileTap={reducedMotion ? {} : { scale: 0.97 }}
+                onClick={() => scrollToSection("standings")}
+                className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-2xl text-base font-semibold text-white/80 border border-white/[0.1] bg-white/[0.03] hover:bg-white/[0.06] hover:text-white transition-colors"
+              >
+                <Trophy className="w-5 h-5 text-amber-300" />
+                View leaderboard
+              </motion.button>
+            </motion.div>
+
+            {/* Trust row */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.55 }}
+              className="mt-6 text-xs md:text-sm text-white/35 flex flex-wrap items-center justify-center gap-x-5 gap-y-2"
+            >
+              <span className="inline-flex items-center gap-1.5"><Lock className="w-3.5 h-3.5" /> No wallet needed</span>
+              <span className="inline-flex items-center gap-1.5"><Shield className="w-3.5 h-3.5" /> You approve what we read</span>
+              <span className="inline-flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5" /> Revoke anytime</span>
             </motion.p>
 
             {/* Live Stats Bar */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.7, ease: easeOut }}
+              transition={{ delay: 0.45, duration: 0.7, ease: easeOut }}
               className="mt-10 flex flex-wrap items-center justify-center gap-4 md:gap-8"
             >
               <motion.div variants={statVariants} className="flex items-center gap-3 px-5 py-3 rounded-2xl glass glass-border">
@@ -1246,6 +1376,51 @@ export default function PageClient() {
                   <div className="tracking-ui text-[10px] uppercase tracking-wider text-white/30">Connected</div>
                 </div>
               </motion.div>
+            </motion.div>
+
+            {/* Product window (Framer-style desktop mockup) */}
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.8, ease: easeOut }}
+              className="hidden lg:block mt-16 relative max-w-4xl mx-auto"
+            >
+              <div className="rounded-2xl border border-white/[0.08] bg-[#0a0a0f]/90 backdrop-blur-xl overflow-hidden shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]">
+                {/* window chrome */}
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06] bg-white/[0.02]">
+                  <span className="w-3 h-3 rounded-full bg-red-500/70" />
+                  <span className="w-3 h-3 rounded-full bg-yellow-500/70" />
+                  <span className="w-3 h-3 rounded-full bg-green-500/70" />
+                  <div className="ml-4 flex items-center gap-2 px-3 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06] text-white/40 text-xs">
+                    <Lock className="w-3 h-3" /> nodea.app
+                  </div>
+                </div>
+                <div className="grid grid-cols-5 gap-3 p-5">
+                  {DATA_SOURCES.map((src, i) => (
+                    <motion.div
+                      key={src.id}
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.7 + i * 0.08, duration: 0.5 }}
+                      className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-colors ${
+                        onboardedSources.has(src.id)
+                          ? "bg-emerald-500/[0.06] border-emerald-500/25"
+                          : "bg-white/[0.02] border-white/[0.06]"
+                      }`}
+                    >
+                      <BrandIcon id={src.icon} size={26} />
+                      <span className="text-[11px] text-white/60">{src.name}</span>
+                      {onboardedSources.has(src.id) ? (
+                        <CheckCircle className="w-4 h-4 text-emerald-400" />
+                      ) : (
+                        <span className="text-[10px] text-white/30">+ Connect</span>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+              {/* glow under window */}
+              <div className="absolute -inset-x-10 -bottom-10 h-24 bg-gradient-to-r from-violet-600/20 via-fuchsia-600/20 to-cyan-600/20 blur-3xl -z-10" />
             </motion.div>
           </motion.section>
 
@@ -1365,10 +1540,11 @@ export default function PageClient() {
 
           {/* ── Main Grid ── */}
           <motion.div
+            id="connect"
             variants={sectionVariants}
             initial="initial"
             animate="animate"
-            className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 lg:gap-10 items-start"
+            className="scroll-mt-24 grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 lg:gap-10 items-start"
           >
             {/* Left: Data Sources */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
@@ -1500,10 +1676,11 @@ export default function PageClient() {
 
               {/* How it Works (Patina-style 3-step) */}
               <motion.section
+                id="how"
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5, duration: 0.6 }}
-                className="mt-12"
+                className="mt-12 scroll-mt-24"
               >
                 <div className="flex items-center gap-3 mb-6">
                   <div className="font-display w-10 h-10 rounded-2xl bg-cyan-500/15 border border-cyan-500/20 flex items-center justify-center text-sm font-semibold text-cyan-300">
@@ -1559,10 +1736,11 @@ export default function PageClient() {
 
               {/* Nodea Tag + Reward + Leaderboard (Patina-style gamification) */}
               <motion.section
+                id="standings"
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.55, duration: 0.6 }}
-                className="mt-12"
+                className="mt-12 scroll-mt-24"
               >
                 <div className="flex items-center gap-3 mb-6">
                   <div className="font-display w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/20 flex items-center justify-center text-sm font-semibold text-amber-300">
@@ -1830,10 +2008,11 @@ export default function PageClient() {
 
             {/* Right: Score + Result Preview */}
             <motion.div
+              id="identity"
               initial={{ opacity: 0, x: 40 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3, duration: 0.6, ease: easeOut }}
-              className="lg:sticky lg:top-28"
+              className="lg:sticky lg:top-28 scroll-mt-24"
             >
               <div className="flex items-center gap-3 mb-6">
                 <div className="font-display w-10 h-10 rounded-2xl bg-fuchsia-500/15 border border-fuchsia-500/20 flex items-center justify-center text-sm font-semibold text-fuchsia-300">
@@ -2062,20 +2241,204 @@ export default function PageClient() {
           </motion.div>
         </main>
 
-        {/* ── Footer ── */}
+        {/* ── Features grid (Framer-style) ── */}
+        <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-16 md:mt-24">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.07] bg-white/[0.02] text-[11px] uppercase tracking-widest text-white/40 mb-4">
+              Why Nodea
+            </div>
+            <h2 className="font-display-hero text-3xl md:text-5xl font-semibold tracking-tighter text-white">
+              Built different. <span className="gradient-brand">Proven by data.</span>
+            </h2>
+            <p className="mt-4 text-white/45 max-w-2xl mx-auto text-sm md:text-base">
+              No fake quizzes. No self-reported hype. Every score comes from accounts
+              you actually use — verified through Vana.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              {
+                icon: Shield,
+                title: "Verified, not self-reported",
+                desc: "Your data is read with your permission via Vana Data Portability — not typed into a form.",
+                accent: "from-emerald-400/20 to-emerald-400/0 text-emerald-300",
+              },
+              {
+                icon: Lock,
+                title: "Private by design",
+                desc: "No wallet, no seed phrase, no password. You approve exactly what we read, and revoke anytime.",
+                accent: "from-violet-400/20 to-violet-400/0 text-violet-300",
+              },
+              {
+                icon: Zap,
+                title: "Instant score",
+                desc: "The moment you connect your first account your Soul Score appears. Add more sources to deepen it.",
+                accent: "from-fuchsia-400/20 to-fuchsia-400/0 text-fuchsia-300",
+              },
+              {
+                icon: Share2,
+                title: "One point of identity",
+                desc: "A single portable card that proves your digital footprint — shareable anywhere.",
+                accent: "from-cyan-400/20 to-cyan-400/0 text-cyan-300",
+              },
+            ].map((f, i) => (
+              <motion.div
+                key={f.title}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-60px" }}
+                transition={{ delay: i * 0.08, duration: 0.5 }}
+                whileHover={reducedMotion ? {} : { y: -6 }}
+                className="group relative rounded-3xl border border-white/[0.07] bg-white/[0.02] p-6 overflow-hidden"
+              >
+                <div className={`absolute inset-0 bg-gradient-to-b ${f.accent} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+                <div className="relative">
+                  <div className="inline-flex p-3 rounded-2xl bg-white/[0.04] border border-white/[0.07] mb-4">
+                    <f.icon className="w-6 h-6" />
+                  </div>
+                  <h3 className="font-display text-base font-semibold text-white mb-2">{f.title}</h3>
+                  <p className="text-sm text-white/45 leading-relaxed">{f.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Final CTA (Framer-style) ── */}
+        <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-20 md:mt-28 mb-20 md:mb-28">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.6 }}
+            className="relative overflow-hidden rounded-[2rem] border border-white/[0.08] bg-gradient-to-b from-[#0d0b18] to-[#060608] px-6 py-16 md:py-24 text-center"
+          >
+            <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full bg-violet-600/15 blur-[120px]" />
+            <div className="absolute bottom-0 right-0 w-[300px] h-[200px] rounded-full bg-cyan-600/10 blur-[100px]" />
+            <div className="relative">
+              <motion.div
+                whileHover={reducedMotion ? {} : { rotate: -6, scale: 1.1 }}
+                className="inline-block mb-6"
+              >
+                <AppLogo size={56} />
+              </motion.div>
+              <h2 className="font-display-hero text-3xl md:text-5xl lg:text-6xl font-semibold tracking-tighter text-white leading-tight">
+                Your data has a story.
+                <br />
+                <span className="gradient-brand">Start your card.</span>
+              </h2>
+              <p className="mt-5 text-white/50 text-base md:text-lg max-w-xl mx-auto">
+                Connect one account and see your Nodea identity come to life — it takes less than a minute.
+              </p>
+              <motion.button
+                whileHover={reducedMotion ? {} : { scale: 1.04, y: -2 }}
+                whileTap={reducedMotion ? {} : { scale: 0.97 }}
+                onClick={() => scrollToSection("connect")}
+                className="mt-9 inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl text-base font-semibold text-white transition-shadow duration-300"
+                style={{
+                  background: "linear-gradient(135deg, #8b5cf6 0%, #d946ef 60%, #f472b6 100%)",
+                  boxShadow: "0 12px 48px -12px rgba(168,85,247,0.7)",
+                }}
+              >
+                Connect your accounts
+                <ArrowRight className="w-5 h-5" />
+              </motion.button>
+              <p className="mt-5 text-xs text-white/30">
+                Free during Vana Cup 2026 · No wallet needed
+              </p>
+            </div>
+          </motion.div>
+        </section>
+
+        {/* ── Footer (Framer-style multi-column) ── */}
         <motion.footer
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.5 }}
-          className="border-t border-white/[0.04] py-8 mt-16 md:mt-24"
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="border-t border-white/[0.05] bg-[#050507]"
         >
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-sm text-white/35">
-              <AppLogo size={20} />
-              <span className="font-medium">Nodea</span>
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-[1.5fr_1fr_1fr_1fr] gap-8">
+              <div className="col-span-2 md:col-span-4 lg:col-span-1">
+                <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="flex items-center gap-2.5 mb-4">
+                  <AppLogo size={28} />
+                  <span className="font-display text-lg font-semibold tracking-tight text-white">Nodea</span>
+                </button>
+                <p className="text-sm text-white/35 max-w-xs leading-relaxed">
+                  Every source. One point. Your digital identity, built from real activity — not a questionnaire.
+                </p>
+                <div className="flex items-center gap-2 mt-5">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-400">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Live on Vana
+                  </span>
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.06] text-[11px] text-white/45">
+                    Vana Cup 2026
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-xs font-semibold uppercase tracking-widest text-white/45 mb-4">Product</h4>
+                <ul className="space-y-2.5">
+                  {[
+                    { label: "Connect", id: "connect" },
+                    { label: "How it works", id: "how" },
+                    { label: "Leaderboard", id: "standings" },
+                    { label: "Your card", id: "identity" },
+                  ].map((l) => (
+                    <li key={l.label}>
+                      <button
+                        onClick={() => scrollToSection(l.id)}
+                        className="text-sm text-white/50 hover:text-white transition-colors"
+                      >
+                        {l.label}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="text-xs font-semibold uppercase tracking-widest text-white/45 mb-4">Data sources</h4>
+                <ul className="space-y-2.5">
+                  {DATA_SOURCES.slice(0, 5).map((s) => (
+                    <li key={s.id}>
+                      <button
+                        onClick={() => scrollToSection("connect")}
+                        className="text-sm text-white/50 hover:text-white transition-colors"
+                      >
+                        {s.name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="text-xs font-semibold uppercase tracking-widest text-white/45 mb-4">Powered by</h4>
+                <ul className="space-y-2.5">
+                  <li><a href="https://www.vana.org" target="_blank" rel="noopener noreferrer" className="text-sm text-white/50 hover:text-white transition-colors">Vana Data Portability</a></li>
+                  <li><a href="https://www.vana.org/cup" target="_blank" rel="noopener noreferrer" className="text-sm text-white/50 hover:text-white transition-colors">Vana Cup 2026</a></li>
+                  <li><a href="https://github.com/rezkyrafael2901/nodea" target="_blank" rel="noopener noreferrer" className="text-sm text-white/50 hover:text-white transition-colors">Open source</a></li>
+                </ul>
+              </div>
             </div>
-            <div className="text-xs text-white/25 text-center sm:text-right">
-              Data stays yours. Read with permission via Vana Data Portability.
+
+            <div className="mt-12 pt-8 border-t border-white/[0.04] flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-xs text-white/25">
+                © 2026 Nodea. Built for Vana Cup 2026.
+              </div>
+              <div className="text-xs text-white/25 text-center sm:text-right">
+                Data stays yours. Read with permission via Vana Data Portability.
+              </div>
             </div>
           </div>
         </motion.footer>
