@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useId } from "react";
 
 /**
  * Official brand icons (Simple Icons paths — v9 for OpenAI which was
@@ -40,20 +40,21 @@ const PATHS: Record<BrandId, string> = {
 
 export function BrandIcon({ id, size = 24, className }: BrandIconProps) {
   const color = BRAND_COLORS[id];
+  const gradientId = useId().replace(/[:]/g, "");
 
   // Instagram uses its official gradient
   if (id === "instagram") {
     return (
       <svg viewBox="0 0 24 24" width={size} height={size} className={className} aria-hidden="true">
         <defs>
-          <linearGradient id="ig-gradient" x1="0%" y1="100%" x2="100%" y2="0%">
+          <linearGradient id={gradientId} x1="0%" y1="100%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#F58529" />
             <stop offset="25%" stopColor="#DD2A7B" />
             <stop offset="50%" stopColor="#8134AF" />
             <stop offset="75%" stopColor="#515BD4" />
           </linearGradient>
         </defs>
-        <path fill="url(#ig-gradient)" d={PATHS.instagram} />
+        <path fill={`url(#${gradientId})`} d={PATHS.instagram} />
       </svg>
     );
   }

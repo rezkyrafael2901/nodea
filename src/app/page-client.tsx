@@ -824,50 +824,6 @@ export default function PageClient() {
   const desktopSources = DATA_SOURCES.filter((s) => s.platform === "desktop");
   const hybridSources = DATA_SOURCES.filter((s) => s.platform === "hybrid");
 
-  const sourceBadge = (source: DataSource) => {
-    if (source.platform === "desktop") {
-      return (
-        <motion.span
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium bg-orange-500/10 text-orange-400 border border-orange-500/20"
-        >
-          <Monitor className="w-2.5 h-2.5" /> Desktop only
-        </motion.span>
-      );
-    }
-    if (source.platform === "hybrid") {
-      return (
-        <motion.span
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium bg-yellow-500/10 text-yellow-400 border border-yellow-500/20"
-        >
-          <Smartphone className="w-2.5 h-2.5" />
-          <Monitor className="w-2.5 h-2.5" />
-          Mobile + Desktop
-        </motion.span>
-      );
-    }
-    const maturityConfig = {
-      stable: { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20", icon: CheckCircle },
-      beta: { bg: "bg-yellow-500/10", text: "text-yellow-400", border: "border-yellow-500/20", icon: Info },
-      alpha: { bg: "bg-orange-500/10", text: "text-orange-400", border: "border-orange-500/20", icon: AlertCircle },
-    };
-    const cfg = maturityConfig[source.maturity as keyof typeof maturityConfig] || maturityConfig.stable;
-    const Icon = cfg.icon;
-    return (
-      <motion.span
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium ${cfg.bg} ${cfg.text} border ${cfg.border}`}
-      >
-        <Icon className="w-2.5 h-2.5" />
-        {source.maturity}
-      </motion.span>
-    );
-  };
-
   const renderSourceCard = (source: DataSource, index: number) => {
     const isConnected = onboardedSources.has(source.id);
     const isDesktopOnly = source.platform === "desktop";
@@ -917,7 +873,6 @@ export default function PageClient() {
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            {sourceBadge(source)}
             {disabledOnMobile ? (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
