@@ -81,20 +81,20 @@ function ReturnContent() {
         {status === "processing" && (
           <>
             <div className="text-5xl mb-6 animate-pulse">⏳</div>
-            <h1 className="text-2xl font-bold mb-2">{message}</h1>
+            <h1 className="text-2xl font-semibold mb-2">{message}</h1>
           </>
         )}
         {status === "success" && (
           <>
             <div className="text-5xl mb-6">✅</div>
-            <h1 className="text-2xl font-bold mb-2 text-emerald-400">Connected!</h1>
+            <h1 className="text-2xl font-semibold mb-2 text-emerald-400">Connected!</h1>
             <p className="text-white/60">{message}</p>
           </>
         )}
         {status === "error" && (
           <>
             <div className="text-5xl mb-6">❌</div>
-            <h1 className="text-2xl font-bold mb-2 text-red-400">Connection Failed</h1>
+            <h1 className="text-2xl font-semibold mb-2 text-red-400">Connection Failed</h1>
             <p className="text-white/60 mb-6">{message}</p>
             <button
               onClick={() => window.close()}

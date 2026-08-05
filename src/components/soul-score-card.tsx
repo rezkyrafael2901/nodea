@@ -44,7 +44,7 @@ function Ring({ total, grade }: { total: number; grade: string }) {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-4xl font-bold tracking-tight" style={{ color }}>{total}</span>
+        <span className="text-4xl font-semibold tracking-tight" style={{ color }}>{total}</span>
         <span className="text-[10px] text-white/40 mt-0.5">/ 100</span>
       </div>
     </div>
@@ -59,7 +59,7 @@ export function SoulScoreCard({ score, connectedCount }: SoulScoreCardProps) {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="text-sm font-semibold text-white/80">Soul Score</div>
-        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-bold bg-gradient-to-b ${gradeColor}`}>
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-semibold bg-gradient-to-b ${gradeColor}`}>
           Grade {score.grade}
         </span>
       </div>

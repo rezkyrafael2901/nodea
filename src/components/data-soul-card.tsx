@@ -25,13 +25,13 @@ export function DataSoulCard({ data }: { data: SoulCardData }) {
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="text-xl font-bold" style={{ color: palette[0] }}>
+            <h3 className="text-xl font-semibold" style={{ color: palette[0] }}>
               NODEA
             </h3>
             <p className="text-sm mt-1">{String(d.soul_tagline || "Loading...")}</p>
           </div>
           <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold"
+            className="w-12 h-12 rounded-xl flex items-center justify-center text-lg font-semibold"
             style={{
               background: `linear-gradient(135deg, ${palette[0]}, ${palette[1] || palette[0]})`,
             }}

@@ -1,23 +1,175 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { DATA_SOURCES, type DataSource, type IdentityData, buildIdentityPrompt, getPalette } from "@/lib/vana-sources";
-import { computeSoulScore } from "@/lib/soul-score";
+import { motion, AnimatePresence, Variants } from "framer-motion";
+import {
+  DATA_SOURCES,
+  type DataSource,
+  type IdentityData,
+  buildIdentityPrompt,
+  getPalette,
+} from "@/lib/vana-sources";
+import { computeSoulScore, type SoulScoreResult, type ScoreComponent } from "@/lib/soul-score";
 import { getTraits, getTopTrait, type Trait } from "@/lib/traits";
+import {
+  REWARD_CONFIG,
+  type LeaderboardEntry,
+  type NodeaIdentity,
+  loadIdentity,
+  makeIdentity,
+  saveIdentity,
+  referralCodeFor,
+  referralUrl,
+} from "@/lib/rewards";
 import { DataSoulCard } from "@/components/data-soul-card";
 import { BrandIconTile, BrandIcon, type BrandId } from "@/components/brand-icons";
 import { AppLogo, AppWordmark } from "@/components/app-logo";
+import {
+  Plus,
+  Check,
+  X,
+  Loader2,
+  Sparkles,
+  Share2,
+  Copy,
+  Download,
+  ExternalLink,
+  ChevronRight,
+  ChevronLeft,
+  Layers,
+  Zap,
+  Crown,
+  Target,
+  Heart,
+  Brain,
+  Users,
+  UserPlus,
+  Monitor,
+  Smartphone,
+  Globe,
+  Lock,
+  Unlock,
+  AlertCircle,
+  CheckCircle,
+  Info,
+  RotateCcw,
+  Settings,
+  Palette,
+  Image as LucideImage,
+  Link2,
+  Trophy,
+  Star,
+  TrendingUp,
+  ArrowUpRight,
+  BarChart2,
+  Shield,
+  Clock,
+  Link,
+  ArrowRight,
+} from "lucide-react";
 
-type ConnectState = "idle" | "requesting" | "awaiting_approval" | "checking" | "reading" | "done" | "error";
+type ConnectState =
+  | "idle"
+  | "requesting"
+  | "awaiting_approval"
+  | "checking"
+  | "reading"
+  | "done"
+  | "error";
+
+const GRADE_COLORS: Record<string, string> = {
+  S: "#fbbf24",
+  A: "#a78bfa",
+  B: "#38bdf8",
+  C: "#34d399",
+  D: "#71717a",
+};
+
+const GRADE_LABELS: Record<string, string> = {
+  S: "Legendary",
+  A: "Elite",
+  B: "Pro",
+  C: "Rising",
+  D: "Newcomer",
+};
+
+const THEME_OPTIONS = [
+  {
+    id: "midnight",
+    label: "Midnight",
+    swatch: "bg-gradient-to-br from-[#0a0a0a] to-[#16213e]",
+  },
+  {
+    id: "neon",
+    label: "Neon",
+    swatch: "bg-gradient-to-br from-[#0f0c29] via-[#24243e] to-[#a855f7]/60",
+  },
+  {
+    id: "glass",
+    label: "Glass",
+    swatch: "bg-gradient-to-br from-[#101418] to-[#1c2530] border border-white/25",
+  },
+];
+
+// ── Easing helpers ──
+const easeOut = [0.16, 1, 0.3, 1] as const;
+const easeSpring = [0.34, 1.56, 0.64, 1] as const;
+
+// ── Motion Variants ──
+const pageVariants: Variants = {
+  initial: { opacity: 0 },
+  animate: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08, delayChildren: 0.2 },
+  },
+};
+
+const sectionVariants: Variants = {
+  initial: { opacity: 0, y: 30 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.6, ease: easeOut } },
+};
+
+const cardVariants: Variants = {
+  initial: { opacity: 0, y: 20, scale: 0.98 },
+  animate: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { delay: i * 0.06, duration: 0.5, ease: easeSpring },
+  }),
+  hover: { y: -8, scale: 1.02, transition: { duration: 0.3, ease: easeOut } },
+  tap: { scale: 0.98 },
+};
+
+const statVariants: Variants = {
+  initial: { opacity: 0, y: 10 },
+  animate: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: 0.3 + i * 0.1, duration: 0.6, ease: easeOut },
+  }),
+};
+
+const glowVariants = {
+  animate: {
+    opacity: [0.3, 0.6, 0.3],
+    scale: [1, 1.05, 1],
+    transition: { duration: 4, repeat: Infinity, ease: "easeInOut" },
+  },
+};
 
 export default function PageClient() {
+  // ── State ──
   const [onboardedSources, setOnboardedSources] = useState<Set<string>>(new Set());
   const [identities, setIdentities] = useState<IdentityData[]>([]);
   const [identityResult, setIdentityResult] = useState<Record<string, unknown> | null>(null);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
+  const [isDesktop, setIsDesktop] = useState(true);
+  const [cardTheme, setCardTheme] = useState("midnight");
+  const [reducedMotion, setReducedMotion] = useState(false);
 
-  // Per-source connect state
+  // Connect flow
   const [connectState, setConnectState] = useState<ConnectState>("idle");
   const [activeSource, setActiveSource] = useState<DataSource | null>(null);
   const [activeMode, setActiveMode] = useState<"web" | "full">("web");
@@ -26,16 +178,134 @@ export default function PageClient() {
   const popupRef = useRef<Window | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Device detection — desktop = fine pointer (mouse/trackpad). Mobile = coarse.
-  const [isDesktop, setIsDesktop] = useState(true);
+  // Pre-flight profile-link check modal
+  const [checkOpen, setCheckOpen] = useState(false);
+  const [checkSource, setCheckSource] = useState<DataSource | null>(null);
+  const [checkMode, setCheckMode] = useState<"web" | "full">("web");
+  const [checkInput, setCheckInput] = useState("");
+  const [checkState, setCheckState] = useState<"idle" | "checking" | "ok" | "fail">("idle");
+  const [checkResult, setCheckResult] = useState<Record<string, unknown> | null>(null);
+  const [checkHint, setCheckHint] = useState("");
+  const checkInputRef = useRef<HTMLInputElement>(null);
 
-  // Card theme selection (OG card variants)
-  const [cardTheme, setCardTheme] = useState<string>("midnight");
-  const THEME_OPTIONS = [
-    { id: "midnight", label: "Midnight", swatch: "bg-gradient-to-br from-[#0a0a0a] to-[#16213e]" },
-    { id: "neon", label: "Neon", swatch: "bg-gradient-to-br from-[#0f0c29] via-[#24243e] to-[#a855f7]/60" },
-    { id: "glass", label: "Glass", swatch: "bg-gradient-to-br from-[#101418] to-[#1c2530] border border-white/25" },
-  ];
+  // Animated values
+  const [displayScore, setDisplayScore] = useState(0);
+  const [displayGrade, setDisplayGrade] = useState("D");
+
+  // Derived values (needed for effects below)
+  const soulScore = useMemo(() => computeSoulScore(identities), [identities]);
+  const connectedCount = onboardedSources.size;
+  const totalSources = DATA_SOURCES.length;
+
+  const [refFrom, setRefFrom] = useState<string | null>(null);
+
+  // ── Nodea Tag identity (Patina-style sign-in, zero external OAuth) ──
+  const [identity, setIdentity] = useState<NodeaIdentity | null>(null);
+  const [tagInput, setTagInput] = useState("");
+  const [tagState, setTagState] = useState<"idle" | "saving" | "done" | "error">("idle");
+  const [tagError, setTagError] = useState("");
+  const [referralCount, setReferralCount] = useState(0);
+
+  // ── Leaderboard (real Vana Cup standings) ──
+  const [standings, setStandings] = useState<LeaderboardEntry[] | null>(null);
+  const [poolInfo, setPoolInfo] = useState<{ pool: number; championPayout: number; runnerUp: number; places: number; cupClosesAt: string; paidBy: string } | null>(null);
+  const [lbLoading, setLbLoading] = useState(true);
+  const [lbError, setLbError] = useState("");
+
+  // Load identity + count referrals once
+  useEffect(() => {
+    try {
+      let id = loadIdentity();
+      if (!id) {
+        id = makeIdentity();
+        saveIdentity(id);
+      }
+      setIdentity(id);
+      // count how many times this browser has seen a referral
+      const seen = localStorage.getItem("nodea:ref-seen");
+      if (seen) setReferralCount(parseInt(seen, 10) || 0);
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get("ref");
+      if (ref) {
+        const n = (parseInt(seen ?? "0", 10) || 0) + 1;
+        localStorage.setItem("nodea:ref-seen", String(n));
+        setReferralCount(n);
+      }
+    } catch {}
+  }, []);
+
+  // Fetch real Vana Cup leaderboard once
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/leaderboard");
+        const data = await res.json();
+        if (data.ok) {
+          setStandings(data.standings ?? []);
+          setPoolInfo({
+            pool: data.pool,
+            championPayout: data.championPayout,
+            runnerUp: data.runnerUp,
+            places: data.places,
+            cupClosesAt: data.cupClosesAt,
+            paidBy: data.paidBy,
+          });
+        } else {
+          setLbError(data.error ?? "Could not load leaderboard.");
+        }
+      } catch {
+        setLbError("Could not load leaderboard.");
+      } finally {
+        setLbLoading(false);
+      }
+    })();
+  }, []);
+
+  // Claim / change the Nodea Tag
+  const handleClaimTag = useCallback(async () => {
+    if (!identity) return;
+    const raw = tagInput.trim();
+    if (!raw) {
+      setTagError("Pick a tag first.");
+      setTagState("error");
+      return;
+    }
+    setTagState("saving");
+    setTagError("");
+    try {
+      const res = await fetch("/api/username", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id: identity.id, username: raw }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setTagError(data.error ?? "Could not save that tag.");
+        setTagState("error");
+        return;
+      }
+      const updated: NodeaIdentity = {
+        ...identity,
+        username: data.username,
+        referralCode: data.referralCode,
+      };
+      setIdentity(updated);
+      saveIdentity(updated);
+      setTagState("done");
+    } catch {
+      setTagError("Network error — try again.");
+      setTagState("error");
+    }
+  }, [identity, tagInput]);
+
+  // ── Effects ──
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get("ref");
+      if (ref) setRefFrom(ref.substring(0, 30));
+    } catch {}
+  }, []);
 
   useEffect(() => {
     const mq = window.matchMedia("(pointer: fine)");
@@ -45,7 +315,35 @@ export default function PageClient() {
     return () => mq.removeEventListener("change", handler);
   }, []);
 
-  // Persist pending connect across refresh (Patina-style)
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  // Animate score/grade changes
+  useEffect(() => {
+    const score = soulScore.total;
+    const grade = soulScore.grade;
+    if (displayScore !== score) {
+      const duration = 800;
+      const start = displayScore;
+      const startTime = Date.now();
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        setDisplayScore(Math.round(start + (score - start) * eased));
+        if (progress < 1) requestAnimationFrame(animate);
+      };
+      animate();
+    }
+    if (displayGrade !== grade) setDisplayGrade(grade);
+  }, [soulScore.total, soulScore.grade, displayScore, displayGrade]);
+
+  // Persist pending connect
   const PENDING_KEY = "nodea:connect-pending";
   const savePending = (requestId: string, sourceId: string, mode: "web" | "full") => {
     try {
@@ -53,155 +351,94 @@ export default function PageClient() {
     } catch {}
   };
   const clearPending = () => {
-    try { localStorage.removeItem(PENDING_KEY); } catch {}
+    try {
+      localStorage.removeItem(PENDING_KEY);
+    } catch {}
   };
 
-  // Listen for postMessage from the return tab
-  useEffect(() => {
-    const handler = (event: MessageEvent) => {
-      if (event.data?.type === "vana-connect-approved") {
-        setActiveRequestId(event.data.requestId);
-        setConnectState("checking");
-        setStatusMessage("Verifying approval...");
+  // ── Connect Flow ──
+  const pollStatus = useCallback(
+    (requestId: string, sourceId: string, mode: "web" | "full" = "web", opts?: { short?: boolean }) => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+      const maxAttempts = opts?.short ? 8 : 240;
+      let attempts = 0;
 
-        // Start polling the status
-        pollStatus(event.data.requestId, event.data.sourceId, event.data.mode || "web");
-      }
-      // Return tab came back — if we have a pending request, poll it now
-      if (event.data?.type === "vana-connect-returned") {
-        try {
-          const raw = localStorage.getItem(PENDING_KEY);
-          if (raw) {
-            const pending = JSON.parse(raw);
-            if (pending?.requestId && pending?.sourceId) {
-              setConnectState("checking");
-              setStatusMessage("Checking approval status...");
-              pollStatus(pending.requestId, pending.sourceId, pending.mode || "web");
-            }
-          }
-        } catch {}
-      }
-    };
-    window.addEventListener("message", handler);
+      // Patina-style staged loading copy
+      const getStagedMessage = (attempt: number): string => {
+        const seconds = attempt * 1.5;
+        if (seconds < 3) return "Opening the Vana approval tab…";
+        if (seconds < 8) return "Waiting for you to approve in the Vana tab…";
+        if (seconds < 18) return "Reading your history…";
+        if (seconds < 35) return "This is the slow part. Your history is being collected for the first time…";
+        return `Still going. First reads usually take up to ${Math.ceil((maxAttempts - attempt) * 1.5 / 60)} min…`;
+      };
 
-    // Restore pending connect after refresh
-    try {
-      const raw = localStorage.getItem(PENDING_KEY);
-      if (raw) {
-        const pending = JSON.parse(raw);
-        if (pending?.requestId && pending?.sourceId && Date.now() - pending.at < 10 * 60 * 1000) {
-          const src = DATA_SOURCES.find((s) => s.id === pending.sourceId);
-          if (src) {
-            setActiveSource(src);
-            setActiveMode(pending.mode || "web");
-            setActiveRequestId(pending.requestId);
-            setConnectState("checking");
-            setStatusMessage("Resuming approval check...");
-            pollStatus(pending.requestId, pending.sourceId, pending.mode || "web", { short: true });
-          }
-        } else {
+      const finish = (state: ConnectState, msg: string) => {
+        if (pollingRef.current) clearInterval(pollingRef.current);
+        setConnectState(state);
+        setStatusMessage(msg);
+      };
+
+      // Set initial staged message
+      setStatusMessage(getStagedMessage(0));
+
+      pollingRef.current = setInterval(async () => {
+        attempts++;
+        if (attempts >= maxAttempts) {
           clearPending();
+          setActiveSource(null);
+          setActiveRequestId(null);
+          finish("idle", "");
+          return;
         }
-      }
-    } catch {}
-
-    // Restore from ?connect=return&source=...&requestId=... (no-opener redirect)
-    try {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("connect") === "return" && params.get("source")) {
-        const sourceId = params.get("source")!;
-        const requestId = params.get("requestId") || undefined;
-        const mode = (params.get("mode") as "web" | "full") || "web";
-        const src = DATA_SOURCES.find((s) => s.id === sourceId);
-        if (src) {
-          setActiveSource(src);
-          setActiveMode(mode);
-          setConnectState("checking");
-          setStatusMessage("Checking approval status...");
-          // If no requestId in URL, fall back to localStorage pending
-          const rid = requestId || (() => {
-            try {
-              const p = JSON.parse(localStorage.getItem(PENDING_KEY) || "null");
-              return p?.requestId || null;
-            } catch { return null; }
-          })();
-          if (rid) pollStatus(rid, sourceId, mode, { short: true });
+        // Update staged message every few seconds
+        if (attempts % 2 === 0) {
+          setStatusMessage(getStagedMessage(attempts));
         }
-        // Clean URL without full reload
-        window.history.replaceState({}, "", "/");
-      }
-    } catch {}
-
-    return () => window.removeEventListener("message", handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Cleanup polling on unmount
-  useEffect(() => {
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
-  }, []);
-
-  const pollStatus = (requestId: string, sourceId: string, mode: "web" | "full" = "web", opts?: { short?: boolean }) => {
-    // Clear any existing polling
-    if (pollingRef.current) clearInterval(pollingRef.current);
-
-    // Fresh connect: Patina-style 1.5s interval, up to 6 minutes (240 attempts).
-    // Restored/short poll (after refresh or return): only 8 attempts (~12s).
-    // If the user already approved we'll catch it; otherwise we reset to idle
-    // so the buttons don't stay locked forever.
-    const maxAttempts = opts?.short ? 8 : 240;
-    let attempts = 0;
-
-    const finish = (state: ConnectState, msg: string) => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-      setConnectState(state);
-      setStatusMessage(msg);
-    };
-
-    pollingRef.current = setInterval(async () => {
-      attempts++;
-      if (attempts >= maxAttempts) {
-        // Never approved — unlock the UI, drop the stale pending marker.
-        clearPending();
-        setActiveSource(null);
-        setActiveRequestId(null);
-        finish("idle", "");
-        return;
-      }
-
-      try {
-        const res = await fetch(
-          `/api/vana/status?requestId=${encodeURIComponent(requestId)}&sourceId=${sourceId}&mode=${mode}`
-        );
-        const data = await res.json();
-
-        if (data.error) {
-          // Dev mode: if SDK not configured, mock is approved immediately
-          if (data.devMode) {
+        try {
+          const res = await fetch(
+            `/api/vana/status?requestId=${encodeURIComponent(requestId)}&sourceId=${sourceId}&mode=${mode}`
+          );
+          const data = await res.json();
+          if (data.error) {
+            if (data.devMode) {
+              clearInterval(pollingRef.current!);
+              setConnectState("reading");
+              setStatusMessage("Dev mode: reading data...");
+              readData(requestId, sourceId, mode);
+              return;
+            }
+            return;
+          }
+          if (
+            data.status === "approved" ||
+            data.status === "ready_for_read" ||
+            data.status === "completed"
+          ) {
             clearInterval(pollingRef.current!);
             setConnectState("reading");
-            setStatusMessage("Dev mode: reading data...");
+            setStatusMessage("Approved! Fetching your data...");
             readData(requestId, sourceId, mode);
             return;
           }
-          // Non-dev-mode error — keep polling (might be transient)
-          return;
-        }
-
-        if (data.status === "approved") {
-          clearInterval(pollingRef.current!);
-          setConnectState("reading");
-          setStatusMessage("Approved! Fetching your data...");
-          readData(requestId, sourceId, mode);
-        }
-        // Otherwise keep polling
-      } catch {
-        // Transient error — keep polling
-      }
-    }, 1500);
-  };
+          if (data.status === "denied" || data.status === "expired") {
+            clearInterval(pollingRef.current!);
+            clearPending();
+            setActiveSource(null);
+            setActiveRequestId(null);
+            finish(
+              "error",
+              data.status === "denied"
+                ? "Access was denied."
+                : "Request expired. Please try again."
+            );
+            return;
+          }
+        } catch {}
+      }, 1500);
+    },
+    []
+  );
 
   const readData = async (requestId: string, sourceId: string, mode: "web" | "full" = "web") => {
     try {
@@ -209,19 +446,14 @@ export default function PageClient() {
         `/api/vana/data?requestId=${encodeURIComponent(requestId)}&sourceId=${sourceId}&mode=${mode}`
       );
       const result = await res.json();
+      if (result.error) throw new Error(result.error);
 
-      if (result.error) {
-        throw new Error(result.error);
-      }
-
-      // Format the data as IdentityData
       const identityData: IdentityData = {
         source: sourceId,
         data: result.data || result,
         raw: [result],
       };
 
-      // Update state
       setOnboardedSources((prev) => {
         const next = new Set(prev);
         next.add(sourceId);
@@ -233,7 +465,6 @@ export default function PageClient() {
       setError("");
       clearPending();
 
-      // Reset connect state after a moment
       setTimeout(() => {
         setConnectState("idle");
         setActiveSource(null);
@@ -243,11 +474,10 @@ export default function PageClient() {
       }, 2000);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to fetch data";
-      // Escrow / payment errors need a human-readable hint
       if (/payment|escrow|insufficient|balance|402/i.test(msg)) {
         setError(
           "Approval succeeded, but the app escrow needs funding to read data. " +
-          "Contact the operator to fund USDC.e escrow on Vana mainnet."
+            "Contact the operator to fund USDC.e escrow on Vana mainnet."
         );
       } else {
         setError(msg);
@@ -258,10 +488,95 @@ export default function PageClient() {
     }
   };
 
+  // Fast-path: the Vana return popup posts back when the user approves.
+  // Trigger an immediate poll so we don't wait up to 1.5s for the next tick.
+  const modeRef = useRef<"web" | "full">("web");
+  useEffect(() => {
+    modeRef.current = activeMode;
+  }, [activeMode]);
+
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      const d = (e.data || {}) as {
+        type?: string;
+        sourceId?: string;
+        requestId?: string;
+      };
+      if (!d || d.type !== "vana-connect-approved" || !d.sourceId || !d.requestId) return;
+      if (pollingRef.current) clearInterval(pollingRef.current);
+      setConnectState("reading");
+      setStatusMessage("Approved! Fetching your data...");
+      readData(d.requestId, d.sourceId, modeRef.current);
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Pre-flight profile link check ──
+  // Vana's ODL page asks the user to paste their profile link and its resolver
+  // returns "profile not found" when the format is wrong. We validate the link
+  // BEFORE opening the Vana tab so users arrive with the exact canonical URL.
+  const needsLinkCheck = (source: DataSource, mode: "web" | "full"): boolean =>
+    mode === "web" && (!!source.handle || !!source.findIt);
+
+  const openLinkCheck = (source: DataSource, mode: "web" | "full" = "web") => {
+    if (connectState !== "idle") return;
+    if (!needsLinkCheck(source, mode)) {
+      handleConnect(source, mode);
+      return;
+    }
+    setCheckSource(source);
+    setCheckMode(mode);
+    setCheckInput("");
+    setCheckState("idle");
+    setCheckResult(null);
+    setCheckHint(source.handle?.hint || source.findIt?.join(" ") || "");
+    setCheckOpen(true);
+    setTimeout(() => checkInputRef.current?.focus(), 150);
+  };
+
+  const runLinkCheck = async () => {
+    if (!checkSource || !checkInput.trim() || checkState === "checking") return;
+    setCheckState("checking");
+    setCheckResult(null);
+    try {
+      const res = await fetch("/api/vana/check-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source: checkSource.id, url: checkInput.trim() }),
+      });
+      const data = await res.json();
+      setCheckResult(data);
+      setCheckState(data.ok ? "ok" : "fail");
+      setCheckHint(data.hint || "");
+    } catch (err) {
+      setCheckResult({ ok: false, error: err instanceof Error ? err.message : "Check failed" });
+      setCheckState("fail");
+      setCheckHint("");
+    }
+  };
+
+  const copyCanonical = async () => {
+    const url = (checkResult as Record<string, unknown> | null)?.canonicalUrl as string | undefined;
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      setStatusMessage("✅ Canonical profile link copied — paste it on the Vana page!");
+    } catch {
+      setStatusMessage(`📋 Copy this: ${url}`);
+    }
+  };
+
+  const proceedToVana = () => {
+    const src = checkSource;
+    const mode = checkMode;
+    setCheckOpen(false);
+    if (src) handleConnect(src, mode);
+  };
+
   const handleConnect = async (source: DataSource, mode: "web" | "full" = "web") => {
     if (connectState !== "idle") return;
-
-    // Desktop-only sources are disabled on mobile
     if (source.platform === "desktop" && !isDesktop) return;
 
     setActiveSource(source);
@@ -276,13 +591,10 @@ export default function PageClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sourceId: source.id, mode }),
       });
-
       const data = await res.json();
 
       if (data.error) {
-        // Dev mode fallback: when no app key configured, simulate approval
         if (data.devMode) {
-          // Simulate connection delay
           await new Promise((r) => setTimeout(r, 1500));
           const identityData: IdentityData = {
             source: source.id,
@@ -309,29 +621,18 @@ export default function PageClient() {
         throw new Error(data.error);
       }
 
-      // Open approval popup
       setConnectState("awaiting_approval");
       setActiveRequestId(data.requestId);
-      setStatusMessage(`Approve access in the new window...`);
+      setStatusMessage("Approve access in the new window...");
       savePending(data.requestId, source.id, mode);
 
-      // Open Vana approval URL in a popup
-      const popup = window.open(
-        data.approvalUrl,
-        "vana-connect",
-        "width=600,height=700,scrollbars=yes"
-      );
-
+      const popup = window.open(data.approvalUrl, "vana-connect", "width=600,height=700,scrollbars=yes");
       if (!popup || popup.closed) {
-        // Popup blocked — show direct link (no re-fetch needed)
         popupRef.current = null;
-        setStatusMessage(`Popup was blocked. Use the link below to approve in a new tab.`);
+        setStatusMessage("Popup was blocked. Use the link below to approve in a new tab.");
         return;
       }
-
       popupRef.current = popup;
-
-      // Start polling for status immediately (the return tab will also trigger via postMessage)
       pollStatus(data.requestId, source.id, mode);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Connection failed";
@@ -342,10 +643,8 @@ export default function PageClient() {
   };
 
   const openApprovalManually = () => {
-    // Open the already-created approval URL if we have it
     if (activeRequestId && activeSource) {
-      const url = `${window.location.origin}/api/vana/request`;
-      fetch(url, {
+      fetch(`${window.location.origin}/api/vana/request`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sourceId: activeSource.id, mode: activeMode }),
@@ -354,22 +653,32 @@ export default function PageClient() {
         .then((data) => {
           if (data.approvalUrl) {
             window.open(data.approvalUrl, "vana-connect", "width=600,height=700");
-            popupRef.current = null; // re-open allowed
+            popupRef.current = null;
           }
         })
         .catch(() => {});
     }
   };
 
+  const cancelConnect = () => {
+    if (pollingRef.current) clearInterval(pollingRef.current);
+    clearPending();
+    setActiveSource(null);
+    setActiveRequestId(null);
+    setActiveMode("web");
+    setConnectState("idle");
+    setStatusMessage("");
+    setError("");
+  };
+
+  // ── Generate Card ──
   const handleGenerate = async () => {
     if (identities.length === 0) {
       setError("Connect at least one data source first");
       return;
     }
-
     setGenerating(true);
     setError("");
-
     try {
       const prompt = buildIdentityPrompt(identities);
       const response = await fetch("/api/identity", {
@@ -377,12 +686,10 @@ export default function PageClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt, sources: identities }),
       });
-
       if (!response.ok) {
         const err = await response.json().catch(() => ({ error: "AI generation failed" }));
         throw new Error(err.error || "AI generation failed");
       }
-
       const result = await response.json();
       setIdentityResult(result);
     } catch (err: unknown) {
@@ -393,23 +700,7 @@ export default function PageClient() {
     }
   };
 
-  const connectedCount = onboardedSources.size;
-  const totalSources = DATA_SOURCES.length;
-
-  // Soul Score — recomputed every time identities change (each connect bumps it live)
-  const soulScore = useMemo(() => computeSoulScore(identities), [identities]);
-
-  // Referral challenge — ?ref=<grade/score> from a shared card
-  const [refFrom, setRefFrom] = useState<string | null>(null);
-  useEffect(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const ref = params.get("ref");
-      if (ref) setRefFrom(ref.substring(0, 30));
-    } catch {}
-  }, []);
-
-  // Build OG image params from current state
+  // ── Share / Download ──
   const buildOgParams = useCallback(() => {
     const p = new URLSearchParams();
     const r = identityResult as Record<string, any> | null;
@@ -434,9 +725,7 @@ export default function PageClient() {
     return p.toString();
   }, [identityResult, identities, soulScore, cardTheme]);
 
-  const cardLink = useCallback(() => {
-    return `${window.location.origin}/?ref=${soulScore.grade}${soulScore.total}`;
-  }, [soulScore]);
+  const cardLink = useCallback(() => `${window.location.origin}/?ref=${soulScore.grade}${soulScore.total}`, [soulScore]);
 
   const shareCard = async () => {
     const url = cardLink();
@@ -477,7 +766,7 @@ export default function PageClient() {
       const svgText = await res.text();
       const blob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
       const url = URL.createObjectURL(blob);
-      const img = new Image();
+      const img = document.createElement("img");
       img.onload = () => {
         const canvas = document.createElement("canvas");
         canvas.width = 1200;
@@ -512,59 +801,7 @@ export default function PageClient() {
     }
   };
 
-  const cancelConnect = () => {
-    if (pollingRef.current) clearInterval(pollingRef.current);
-    clearPending();
-    setActiveSource(null);
-    setActiveRequestId(null);
-    setActiveMode("web");
-    setConnectState("idle");
-    setStatusMessage("");
-    setError("");
-  };
-
-  const renderConnectButton = (source: DataSource, mode: "web" | "full" = "web") => {
-    const isConnected = onboardedSources.has(source.id);
-    const isProcessing = activeSource?.id === source.id && !isConnected;
-    const isAwaiting = isProcessing && connectState === "awaiting_approval";
-
-    if (isConnected) {
-      return (
-        <span className="inline-flex items-center gap-1.5 text-emerald-400 text-xs font-medium">
-          <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4" aria-hidden="true">
-            <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
-          </svg>
-          Connected
-        </span>
-      );
-    }
-
-    if (isProcessing) {
-      return (
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={cancelConnect}
-            className="px-3 py-1.5 text-xs font-medium text-white/60 hover:text-white bg-white/[0.04] hover:bg-white/[0.1] border border-white/10 rounded-lg transition-colors"
-            title="Cancel this connection"
-          >
-            Cancel
-          </button>
-        </div>
-      );
-    }
-
-    return (
-      <button
-        onClick={() => handleConnect(source, mode)}
-        disabled={connectState !== "idle" || generating}
-        className="px-4 py-1.5 bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 hover:border-white/25 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-colors"
-      >
-        {isAwaiting ? "Pending…" : isProcessing ? "Connecting…" : "Connect"}
-      </button>
-    );
-  };
-
-  // Group sources by availability
+  // ── Render Helpers ──
   const webSources = DATA_SOURCES.filter((s) => s.platform !== "desktop");
   const desktopSources = DATA_SOURCES.filter((s) => s.platform === "desktop");
   const hybridSources = DATA_SOURCES.filter((s) => s.platform === "hybrid");
@@ -572,432 +809,1436 @@ export default function PageClient() {
   const sourceBadge = (source: DataSource) => {
     if (source.platform === "desktop") {
       return (
-        <span className="hidden sm:inline-flex text-[10px] px-2 py-0.5 rounded-full font-medium bg-orange-500/10 text-orange-400">
-          Desktop only
-        </span>
+        <motion.span
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium bg-orange-500/10 text-orange-400 border border-orange-500/20"
+        >
+          <Monitor className="w-2.5 h-2.5" /> Desktop only
+        </motion.span>
       );
     }
     if (source.platform === "hybrid") {
       return (
-        <span className="hidden sm:inline-flex text-[10px] px-2 py-0.5 rounded-full font-medium bg-yellow-500/10 text-yellow-400">
+        <motion.span
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium bg-yellow-500/10 text-yellow-400 border border-yellow-500/20"
+        >
+          <Smartphone className="w-2.5 h-2.5" />
+          <Monitor className="w-2.5 h-2.5" />
           Mobile + Desktop
-        </span>
+        </motion.span>
       );
     }
+    const maturityConfig = {
+      stable: { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20", icon: CheckCircle },
+      beta: { bg: "bg-yellow-500/10", text: "text-yellow-400", border: "border-yellow-500/20", icon: Info },
+      alpha: { bg: "bg-orange-500/10", text: "text-orange-400", border: "border-orange-500/20", icon: AlertCircle },
+    };
+    const cfg = maturityConfig[source.maturity as keyof typeof maturityConfig] || maturityConfig.stable;
+    const Icon = cfg.icon;
     return (
-      <span className={`hidden sm:inline-flex text-[10px] px-2 py-0.5 rounded-full font-medium ${
-        source.maturity === "stable" ? "bg-emerald-500/10 text-emerald-400" :
-        source.maturity === "beta" ? "bg-yellow-500/10 text-yellow-400" :
-        "bg-orange-500/10 text-orange-400"
-      }`}>
+      <motion.span
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium ${cfg.bg} ${cfg.text} border ${cfg.border}`}
+      >
+        <Icon className="w-2.5 h-2.5" />
         {source.maturity}
-      </span>
+      </motion.span>
     );
   };
 
-  const renderSourceCard = (source: DataSource) => {
+  const renderSourceCard = (source: DataSource, index: number) => {
     const isConnected = onboardedSources.has(source.id);
     const isDesktopOnly = source.platform === "desktop";
     const isHybrid = source.platform === "hybrid";
     const disabledOnMobile = isDesktopOnly && !isDesktop;
 
     return (
-      <div
+      <motion.div
         key={source.id}
-        className={`group relative flex h-full flex-col rounded-xl border p-4 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-xl hover:shadow-violet-500/[0.07] ${
+        variants={cardVariants}
+        custom={index}
+        initial="initial"
+        animate="animate"
+        whileHover={reducedMotion ? {} : "hover"}
+        whileTap={reducedMotion ? {} : "tap"}
+        className={`group relative flex h-full flex-col rounded-2xl border p-5 transition-all duration-300 ease-out ${
           isConnected
-            ? "bg-emerald-500/[0.04] border-emerald-500/25 hover:border-emerald-500/40"
+            ? "bg-emerald-500/[0.03] border-emerald-500/20 hover:border-emerald-500/40"
             : disabledOnMobile
-            ? "bg-white/[0.01] border-white/[0.05] opacity-60"
-            : "bg-white/[0.02] border-white/[0.07] hover:border-violet-400/30 hover:bg-white/[0.05]"
+            ? "bg-white/[0.01] border-white/[0.04] opacity-50"
+            : "glass glass-border-hover hover:bg-white/[0.03]"
         }`}
       >
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3.5 min-w-0">
-            <div className="shrink-0 transition-transform duration-300 ease-out group-hover:scale-110 group-hover:-rotate-3">
-              <BrandIconTile id={source.icon} size={44} />
-            </div>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3.5 min-w-0 flex-1">
+            <motion.div
+              whileHover={reducedMotion ? {} : { scale: 1.1, rotate: -3 }}
+              className="shrink-0 transition-transform duration-300 ease-out"
+            >
+              <BrandIconTile id={source.icon} size={48} />
+            </motion.div>
             <div className="min-w-0">
-              <div className="font-medium transition-colors duration-300 group-hover:text-white">{source.name}</div>
-              <div className="text-xs text-white/45 truncate transition-colors duration-300 group-hover:text-white/60">{source.description}</div>
+              <motion.h3
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="font-medium text-white group-hover:text-white transition-colors duration-300 truncate"
+              >
+                {source.name}
+              </motion.h3>
+              <motion.p
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="text-xs text-white/45 truncate transition-colors duration-300 group-hover:text-white/60 mt-0.5"
+              >
+                {source.description}
+              </motion.p>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {sourceBadge(source)}
             {disabledOnMobile ? (
-              <span className="inline-flex items-center gap-1 text-[11px] text-white/30" title="Requires Vana Desktop on a computer">
-                <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5" aria-hidden="true">
-                  <path fillRule="evenodd" d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z" clipRule="evenodd" />
-                </svg>
-                Desktop
-              </span>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] text-white/30 bg-white/[0.02] border border-white/[0.04]"
+              >
+                <Monitor className="w-3.5 h-3.5" />
+                <span>Desktop only</span>
+              </motion.div>
             ) : isHybrid && isDesktop && !isConnected ? (
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => handleConnect(source, "web")}
+              <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-1.5">
+                <motion.button
+                  whileHover={reducedMotion ? {} : { scale: 1.05 }}
+                  whileTap={reducedMotion ? {} : { scale: 0.95 }}
+                  onClick={() => openLinkCheck(source, "web")}
                   disabled={connectState !== "idle" || generating}
-                  className="px-3 py-1.5 bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 hover:border-white/25 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-xs font-medium transition-colors"
+                  className="px-3 py-1.5 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-xs font-medium transition-colors"
                   title="Profile only — works anywhere"
                 >
                   Profile
-                </button>
-                <button
-                  onClick={() => handleConnect(source, "full")}
+                </motion.button>
+                <motion.button
+                  whileHover={reducedMotion ? {} : { scale: 1.05 }}
+                  whileTap={reducedMotion ? {} : { scale: 0.95 }}
+                  onClick={() => openLinkCheck(source, "full")}
                   disabled={connectState !== "idle" || generating}
                   className="px-3 py-1.5 bg-violet-500/15 hover:bg-violet-500/25 border border-violet-500/30 hover:border-violet-500/50 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-xs font-medium text-violet-200 transition-colors"
                   title="Watch history, likes, subscriptions — needs Vana Desktop"
                 >
                   Deep
-                </button>
-              </div>
+                </motion.button>
+              </motion.div>
             ) : (
-              renderConnectButton(source, isDesktopOnly ? "full" : "web")
+              <motion.button
+                whileHover={reducedMotion ? {} : { scale: 1.02 }}
+                whileTap={reducedMotion ? {} : { scale: 0.98 }}
+                onClick={() => openLinkCheck(source, isDesktopOnly ? "full" : "web")}
+                disabled={connectState !== "idle" || generating || isConnected}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                  isConnected
+                    ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 cursor-default"
+                    : "bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
+                }`}
+              >
+                {isConnected ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    Connected
+                  </>
+                ) : activeSource?.id === source.id ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {connectState === "awaiting_approval" ? "Pending…" : "Connecting…"}
+                  </>
+                ) : (
+                  "Connect"
+                )}
+              </motion.button>
             )}
           </div>
         </div>
-        {disabledOnMobile && (
-          <div className="mt-3 text-[11px] text-white/35 leading-relaxed line-clamp-2">
-            {source.findIt?.join(" ")}
-          </div>
+
+        {disabledOnMobile && source.findIt && (
+          <motion.p
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            className="mt-3 text-[11px] text-white/35 leading-relaxed line-clamp-2"
+          >
+            {source.findIt.join(" ")}
+          </motion.p>
         )}
+
         {isHybrid && isDesktop && !isConnected && (
-          <div className="mt-3 text-[11px] text-white/35 leading-relaxed">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-3 text-[11px] text-white/35 leading-relaxed"
+          >
             <span className="text-yellow-400/70 font-medium">Profile</span> works anywhere.{" "}
-            <span className="text-violet-300/70 font-medium">Deep</span> pulls watch history, likes &amp; subscriptions — connect it in Vana Desktop first for full data.
-          </div>
+            <span className="text-violet-300/70 font-medium">Deep</span> pulls watch history, likes &
+            subscriptions — connect it in Vana Desktop first for full data.
+          </motion.div>
         )}
-      </div>
+
+        {isConnected && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-4 pt-4 border-t border-emerald-500/10 flex items-center gap-2 text-xs text-emerald-400"
+          >
+            <Zap className="w-3.5 h-3.5" />
+            <span>Contributing to your Soul Score</span>
+          </motion.div>
+        )}
+      </motion.div>
     );
   };
 
+  // ── ScoreBreakdown (Patina-style component bars) ──
+  const ScoreBreakdown = ({ components }: { components: ScoreComponent[] }) => {
+    const componentIcons = {
+      age: Clock,
+      corroboration: Shield,
+      depth: BarChart2,
+      standing: Users,
+      breadth: Globe,
+    };
+    const componentColors = {
+      age: "from-violet-500 to-fuchsia-500",
+      corroboration: "from-emerald-500 to-cyan-500",
+      depth: "from-amber-500 to-orange-500",
+      standing: "from-cyan-500 to-blue-500",
+      breadth: "from-fuchsia-500 to-pink-500",
+    };
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.6, ease: easeOut }}
+        className="space-y-4"
+      >
+        {components.map((comp, i) => {
+          const Icon = componentIcons[comp.key as keyof typeof componentIcons] || BarChart2;
+          const gradient = componentColors[comp.key as keyof typeof componentColors] || "from-white to-white";
+          const pct = Math.round((comp.points / comp.max) * 100);
+
+          return (
+            <motion.div
+              key={comp.key}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 + i * 0.06, duration: 0.4 }}
+              className="space-y-2"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className={`p-1.5 rounded-lg bg-gradient-to-r ${gradient}`}>
+                    <Icon className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-white flex items-center gap-1">
+                      {comp.label}
+                      <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: 0.2 + i * 0.06, type: "spring", stiffness: 300 }}
+                        className="font-mono text-lg"
+                      >
+                        {comp.points}/{comp.max}
+                      </motion.span>
+                    </div>
+                    <div className="text-[11px] text-white/45">{comp.detail}</div>
+                  </div>
+                </div>
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3 + i * 0.06 }}
+                  className="shrink-0 font-mono text-sm text-white/40"
+                >
+                  {pct}%
+                </motion.span>
+              </div>
+              <div className="h-2 bg-white/[0.04] rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${pct}%` }}
+                  transition={{ delay: 0.2 + i * 0.06, duration: 0.8, ease: easeSpring }}
+                  className={`h-full rounded-full bg-gradient-to-r ${gradient} shadow-[0_0_10px_-2px_rgba(168,85,247,0.5)]`}
+                />
+              </div>
+            </motion.div>
+          );
+        })}
+      </motion.div>
+    );
+  };
+
+  const gradeColor = GRADE_COLORS[displayGrade] || GRADE_COLORS.D;
+  const gradeLabel = GRADE_LABELS[displayGrade] || GRADE_LABELS.D;
+
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-white">
-      {/* Ambient background */}
-      <div className="pointer-events-none fixed inset-0 z-0">
-        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full bg-violet-600/10 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 w-[400px] h-[400px] rounded-full bg-fuchsia-600/5 blur-[100px]" />
-        <div className="absolute bottom-0 right-0 w-[500px] h-[300px] rounded-full bg-indigo-600/10 blur-[120px]" />
+    <motion.div
+      initial="initial"
+      animate="animate"
+      variants={pageVariants}
+      className="min-h-screen bg-[#060608] text-white relative overflow-x-hidden"
+    >
+      {/* ── Animated Background ── */}
+      <motion.div
+        className="pointer-events-none fixed inset-0 -z-10"
+        animate={glowVariants}
+        style={{ willChange: "transform, opacity" }}
+      >
+        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full bg-violet-600/8 blur-[150px]" />
+        <div className="absolute top-1/3 -left-60 w-[500px] h-[500px] rounded-full bg-fuchsia-600/5 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 w-[600px] h-[400px] rounded-full bg-cyan-600/5 blur-[150px]" />
+        <div
+          className="absolute top-0 left-0 w-full h-full"
+          style={{
+            background: "radial-gradient(ellipse at 50% 0%, rgba(168,85,247,0.06) 0%, transparent 60%)",
+          }}
+        />
+      </motion.div>
+
+      {/* ── Floating Particles ── */}
+      <div className="pointer-events-none fixed inset-0 -z-10" aria-hidden="true">
+        {[...Array(12)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-1 h-1 rounded-full bg-violet-500/30"
+            style={{
+              left: `${5 + Math.random() * 90}%`,
+              top: `${5 + Math.random() * 90}%`,
+            }}
+            animate={{
+              y: [-20, 20, -20],
+              x: [-10, 10, -10],
+              opacity: [0.1, 0.4, 0.1],
+            }}
+            transition={{ duration: 15 + Math.random() * 10, repeat: Infinity, ease: "linear", delay: Math.random() * 5 }}
+          />
+        ))}
       </div>
 
       <div className="relative z-10">
-        {/* Header */}
-        <header className="border-b border-white/[0.06] backdrop-blur-sm bg-[#0a0a0a]/70 sticky top-0">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-            <AppWordmark size={48} />
-            <div className="flex items-center gap-3">
-              <div className="text-sm text-white/50">
-                <span className="font-medium text-white">{connectedCount}</span>
-                <span className="mx-1.5 text-white/20">/</span>
-                {totalSources} sources
-              </div>
-              <div className="h-1.5 w-28 rounded-full bg-white/[0.06] overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full transition-all duration-700"
-                  style={{ width: `${(connectedCount / totalSources) * 100}%` }}
-                />
-              </div>
+        {/* ── Header ── */}
+        <motion.header
+          initial={{ y: -100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.6, ease: easeOut }}
+          className="border-b border-white/[0.04] backdrop-blur-2xl bg-[#060608]/80 sticky top-0 z-50"
+        >
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center justify-between">
+              <AppWordmark size={52} />
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+                className="flex items-center gap-4"
+              >
+                <div className="hidden sm:flex items-center gap-3 px-4 py-2 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                  <motion.span
+                    animate={{ scale: [1, 1.05, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="text-emerald-400 font-mono text-lg font-semibold"
+                  >
+                    {connectedCount}
+                  </motion.span>
+                  <span className="text-white/20 mx-1">/</span>
+                  <span className="text-white/50 font-mono text-lg">{totalSources}</span>
+                  <span className="text-[10px] uppercase tracking-wider text-white/30 ml-1">sources</span>
+                </div>
+                <div className="h-1.5 w-32 sm:w-40 rounded-full bg-white/[0.04] overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(connectedCount / totalSources) * 100}%` }}
+                    transition={{ delay: 0.4, duration: 1, ease: easeSpring }}
+                    className="h-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-cyan-500 rounded-full"
+                  />
+                </div>
+              </motion.div>
             </div>
           </div>
-        </header>
+        </motion.header>
 
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 md:py-16">
-          {/* Hero */}
-          <div className="text-center mb-12 md:mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] text-xs text-white/50 mb-6">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Powered by Vana Data Portability
-            </div>
-            <h2 className="text-4xl md:text-6xl font-semibold tracking-tight mb-5 bg-gradient-to-br from-white via-white to-white/40 bg-clip-text text-transparent">
-              Every source. One point.
-            </h2>
-            <p className="text-lg md:text-xl text-white/50 max-w-2xl mx-auto leading-relaxed">
+        <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 md:py-20 lg:py-28">
+          {/* ── Hero ── */}
+          <motion.section
+            variants={sectionVariants}
+            initial="initial"
+            animate="animate"
+            className="text-center mb-16 md:mb-24"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1, duration: 0.5, ease: easeSpring }}
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.02] text-xs text-white/50 mb-8"
+            >
+              <motion.span
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                className="w-2 h-2 rounded-full bg-emerald-400"
+              />
+              <span>Powered by Vana Data Portability</span>
+            </motion.div>
+
+            <motion.h1
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.7, ease: easeOut }}
+              className="font-display-hero text-4xl md:text-6xl lg:text-7xl font-semibold tracking-tighter leading-[1.05] mb-6"
+            >
+              <span className="gradient-white">Every source.</span>{" "}
+              <span className="gradient-white">One point.</span>
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.7, ease: easeOut }}
+              className="tracking-ui text-lg md:text-xl lg:text-2xl text-white/50 max-w-3xl mx-auto leading-relaxed text-balance"
+            >
               Nodea connects your accounts across Vana into a single digital identity —
               built from your real activity, not a questionnaire.
-            </p>
-          </div>
+            </motion.p>
 
-          {/* Status Message */}
-          {statusMessage && (
-            <div className={`mb-6 p-4 rounded-xl text-sm border ${
-              connectState === "error"
-                ? "bg-red-500/10 border-red-500/30 text-red-400"
-                : connectState === "done"
-                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-                : "bg-violet-500/10 border-violet-500/30 text-violet-400"
-            }`}>
-              {statusMessage}
-            </div>
-          )}
+            {/* Live Stats Bar */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.7, ease: easeOut }}
+              className="mt-10 flex flex-wrap items-center justify-center gap-4 md:gap-8"
+            >
+              <motion.div variants={statVariants} className="flex items-center gap-3 px-5 py-3 rounded-2xl glass glass-border">
+                <div className="p-2 rounded-xl bg-violet-500/15">
+                  <Target className="w-5 h-5 text-violet-300" />
+                </div>
+                <div>
+                  <div className="font-display font-semibold text-2xl md:text-3xl gradient-brand">{displayScore}</div>
+                  <div className="tracking-ui text-[10px] uppercase tracking-wider text-white/30">Soul Score</div>
+                </div>
+              </motion.div>
+              <motion.div variants={statVariants} className="flex items-center gap-3 px-5 py-3 rounded-2xl glass glass-border">
+                <div className="p-2 rounded-xl" style={{ background: `${gradeColor}20` }}>
+                  <Crown className="w-5 h-5" style={{ color: gradeColor }} />
+                </div>
+                <div>
+                  <div className="font-display font-semibold text-2xl md:text-3xl" style={{ color: gradeColor }}>
+                    Grade {displayGrade}
+                  </div>
+                  <div className="tracking-ui text-[10px] uppercase tracking-wider text-white/30">{gradeLabel}</div>
+                </div>
+              </motion.div>
+              <motion.div variants={statVariants} className="flex items-center gap-3 px-5 py-3 rounded-2xl glass glass-border">
+                <div className="p-2 rounded-xl bg-cyan-500/15">
+                  <TrendingUp className="w-5 h-5 text-cyan-300" />
+                </div>
+                <div>
+                  <div className="font-display font-semibold text-2xl md:text-3xl gradient-cyan-pink">{connectedCount}</div>
+                  <div className="tracking-ui text-[10px] uppercase tracking-wider text-white/30">Connected</div>
+                </div>
+              </motion.div>
+            </motion.div>
+          </motion.section>
 
-          {/* Error */}
-          {error && !statusMessage && (
-            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
-              {error}
-            </div>
-          )}
-
-          {/* Popup blocked fallback */}
-          {connectState === "awaiting_approval" && !popupRef.current && (
-            <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl text-sm">
-              <div className="text-yellow-400 font-medium mb-2">
-                Popup was blocked — approve in a new tab instead
-              </div>
-              <p className="text-white/60 mb-3">
-                Click the link below, log in to Vana, and approve the request.{" "}
-                <strong>Keep both tabs open</strong> until this page says connected.
-              </p>
-              <a
-                href={`https://app.vana.org/data-connection-requests/${activeRequestId}?mode=page`}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-block px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/40 text-yellow-300 rounded-lg font-medium"
+          {/* ── Status / Error / Referral ── */}
+          <AnimatePresence mode="wait">
+            {statusMessage && (
+              <motion.div
+                key={connectState}
+                initial={{ opacity: 0, y: -20, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: "auto" }}
+                exit={{ opacity: 0, y: -20, height: 0 }}
+                transition={{ duration: 0.3, ease: easeOut }}
+                className={`mb-8 p-4 rounded-2xl text-sm border flex items-start gap-3 ${
+                  connectState === "error"
+                    ? "bg-red-500/10 border-red-500/20 text-red-400"
+                    : connectState === "done"
+                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                    : "bg-violet-500/10 border-violet-500/20 text-violet-400"
+                }`}
               >
-                Open Vana approval ↗
-              </a>
-            </div>
-          )}
+                {connectState === "error" && <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />}
+                {connectState === "done" && <CheckCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />}
+                {connectState !== "error" && connectState !== "done" && <Loader2 className="w-5 h-5 mt-0.5 flex-shrink-0 animate-spin text-violet-400" />}
+                <span>{statusMessage}</span>
+              </motion.div>
+            )}
 
-          {/* Awaiting approval guidance (popup open) */}
-          {connectState === "awaiting_approval" && popupRef.current && (
-            <div className="mb-6 p-4 bg-violet-500/10 border border-violet-500/30 rounded-xl text-sm">
-              <div className="text-violet-300 font-medium mb-1">
-                Waiting for approval…
-              </div>
-              <p className="text-white/60">
-                Approve access in the Vana window.{" "}
-                <strong>Keep both tabs open</strong> until it says connected.
-              </p>
-            </div>
-          )}
+            {error && !statusMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: -20, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: "auto" }}
+                exit={{ opacity: 0, y: -20, height: 0 }}
+                className="mb-8 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm flex items-start gap-3"
+              >
+                <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                <span>{error}</span>
+              </motion.div>
+            )}
 
-          {/* Generating indicator */}
-          {generating && (
-            <div className="mb-6 p-4 bg-violet-500/10 border border-violet-500/30 rounded-xl text-violet-400 text-sm animate-pulse">
-              Generating your Nodea card...
-            </div>
-          )}
+            {connectState === "awaiting_approval" && !popupRef.current && (
+              <motion.div
+                initial={{ opacity: 0, y: -20, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: "auto" }}
+                className="mb-8 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl text-sm"
+              >
+                <div className="flex items-center gap-2 text-yellow-400 font-medium mb-2">
+                  <AlertCircle className="w-5 h-5" />
+                  Popup was blocked — approve in a new tab instead
+                </div>
+                <p className="text-white/60 mb-3">
+                  Click the link below, log in to Vana, and approve the request.{" "}
+                  <strong>Keep both tabs open</strong> until this page says connected.
+                </p>
+                <a
+                  href={`https://app.vana.org/data-connection-requests/${activeRequestId}?mode=page`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 text-yellow-300 rounded-xl font-medium transition-colors"
+                >
+                  Open Vana approval
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              </motion.div>
+            )}
 
-          {/* Referral challenge banner */}
-          {refFrom && (
-            <div className="mb-6 p-4 bg-gradient-to-r from-amber-500/15 to-orange-500/10 border border-amber-500/30 rounded-xl text-amber-200 text-sm">
-              🏆 You came from a Nodea Card <span className="font-semibold">Grade {refFrom}</span> — connect your data and try to beat their score!
-            </div>
-          )}
+            {connectState === "awaiting_approval" && popupRef.current && (
+              <motion.div
+                initial={{ opacity: 0, y: -20, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: "auto" }}
+                className="mb-8 p-4 bg-violet-500/10 border border-violet-500/20 rounded-2xl text-sm"
+              >
+                <div className="flex items-center gap-2 text-violet-300 font-medium mb-1">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Waiting for approval…
+                </div>
+                <p className="text-white/60">
+                  Approve access in the Vana window.{" "}
+                  <strong>Keep both tabs open</strong> until it says connected.
+                </p>
+              </motion.div>
+            )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 lg:gap-10 items-start">
+            {generating && (
+              <motion.div
+                initial={{ opacity: 0, y: -20, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: "auto" }}
+                className="mb-8 p-4 bg-violet-500/10 border border-violet-500/20 rounded-2xl text-violet-400 text-sm flex items-center gap-2"
+              >
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Generating your Nodea card…</span>
+              </motion.div>
+            )}
+
+            {refFrom && (
+              <motion.div
+                initial={{ opacity: 0, y: -20, height: 0, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, height: "auto", scale: 1 }}
+                className="mb-8 p-4 rounded-2xl text-sm flex items-center gap-3 border bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/20 text-amber-200"
+              >
+                <motion.div
+                  animate={{ rotate: [0, 5, -5, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                  className="p-2 rounded-xl bg-amber-500/20"
+                >
+                  <Trophy className="w-5 h-5" />
+                </motion.div>
+                <div>
+                  <p className="font-medium">
+                    🏆 You came from a Nodea Card{" "}
+                    <span className="font-semibold gradient-brand">Grade {refFrom}</span> —
+                    connect your data and try to beat their score!
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* ── Main Grid ── */}
+          <motion.div
+            variants={sectionVariants}
+            initial="initial"
+            animate="animate"
+            className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 lg:gap-10 items-start"
+          >
             {/* Left: Data Sources */}
-            <div>
-              {/* Step 1 header */}
-              <div className="flex items-center gap-3 mb-6">
-                <span className="w-8 h-8 rounded-xl bg-violet-500/15 border border-violet-500/25 text-violet-300 flex items-center justify-center text-sm font-semibold">1</span>
-                <div>
-                  <h3 className="text-lg font-semibold tracking-tight leading-tight">Connect data sources</h3>
-                  <p className="text-xs text-white/40 mt-0.5">Pick any accounts — your card gets deeper with each one</p>
-                </div>
-                <span className="ml-auto inline-flex items-center gap-1.5 text-xs text-white/40 shrink-0">
-                  <span className="font-semibold text-white/80">{connectedCount}</span>/<span>{totalSources}</span>
-                  <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-emerald-400/70" aria-hidden="true">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
-                  </svg>
-                </span>
-              </div>
-
-              <div className="space-y-7">
-                {/* Web sources — work everywhere */}
-                <section>
-                  <div className="flex items-center gap-2.5 mb-3">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-white/45">Instant connect</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-medium">Mobile OK</span>
-                    <span className="ml-auto text-[11px] text-white/25">{webSources.filter((s) => onboardedSources.has(s.id)).length}/{webSources.length}</span>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {webSources.map((source) => renderSourceCard(source))}
-                  </div>
-                </section>
-
-                {/* Desktop sources — deep data, needs Vana Desktop */}
-                <section>
-                  <div className="flex items-center gap-2.5 mb-3">
-                    <span className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0" />
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-white/45">Deep data</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-500/10 text-orange-400 font-medium">Vana Desktop</span>
-                    <span className="ml-auto text-[11px] text-white/25">{desktopSources.filter((s) => onboardedSources.has(s.id)).length}/{desktopSources.length}</span>
-                    {!isDesktop && (
-                      <span className="text-[10px] text-white/30 font-normal hidden sm:inline">— install on a computer for these</span>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {desktopSources.map((source) => renderSourceCard(source))}
-                    {!isDesktop && (
-                      <div className="md:col-span-2 p-3.5 rounded-xl border border-dashed border-white/[0.08] text-[11px] text-white/35 leading-relaxed">
-                        💻 <span className="text-white/50 font-medium">Vana Desktop</span> unlocks deep history:{" "}
-                        Steam games &amp; playtime, YouTube watch history, ChatGPT conversations.{" "}
-                        <span className="text-white/40">Install it on your PC at vana.org/desktop, connect your accounts there, then come back and hit Connect.</span>
-                      </div>
-                    )}
-                  </div>
-                </section>
-              </div>
-
-              {/* Generate Button */}
-              <button
-                onClick={handleGenerate}
-                disabled={generating || identities.length === 0 || connectState !== "idle"}
-                className="w-full mt-8 py-4 rounded-xl text-lg font-semibold tracking-tight transition-all bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 hover:shadow-lg hover:shadow-violet-500/25 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none flex items-center justify-center gap-2.5"
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }}
+                className="flex items-center gap-3 mb-8"
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-5 h-5" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z" />
-                </svg>
-                {generating
-                  ? "Generating…"
-                  : identities.length > 0
-                  ? `Generate Nodea Card${identities.length > 1 ? ` (${identities.length} sources)` : ""}`
-                  : "Connect at least one source"}
-              </button>
-              <p className="text-center text-[11px] text-white/25 mt-3">
-                Your card is generated from real connected data — no questionnaire.
-              </p>
-            </div>
-
-            {/* Right: Score + Result Preview (sticky) */}
-            <div className="lg:sticky lg:top-24">
-              <div className="flex items-center gap-3 mb-6">
-                <span className="w-8 h-8 rounded-xl bg-fuchsia-500/15 border border-fuchsia-500/25 text-fuchsia-300 flex items-center justify-center text-sm font-semibold">2</span>
-                <div>
-                  <h3 className="text-lg font-semibold tracking-tight leading-tight">Your identity</h3>
-                  <p className="text-xs text-white/40 mt-0.5">Your identity from connected data</p>
+                <div className="font-display w-10 h-10 rounded-2xl bg-violet-500/15 border border-violet-500/20 flex items-center justify-center text-sm font-semibold text-violet-300">
+                  1
                 </div>
-              </div>
+                <div>
+                  <h2 className="font-display text-lg font-semibold tracking-tight leading-tight">Connect data sources</h2>
+                  <p className="tracking-ui text-xs text-white/40 mt-0.5">Pick any accounts — your card gets deeper with each one</p>
+                </div>
+                <motion.div
+                  animate={{ scale: [1, 1.02, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="ml-auto flex items-center gap-1.5 text-xs text-white/40 shrink-0 px-3 py-1.5 rounded-xl bg-white/[0.02] border border-white/[0.04]"
+                >
+                  <span className="font-semibold text-white/80">{connectedCount}</span>
+                  <span className="text-white/20">/</span>
+                  <span>{totalSources}</span>
+                  <TrendingUp className="w-4 h-4 text-emerald-400/70" />
+                </motion.div>
+              </motion.div>
 
-              {identityResult ? (
-                <>
-                  {/* Theme picker */}
-                  <div className="mb-4">
-                    <div className="text-[11px] font-semibold uppercase tracking-wider text-white/40 mb-2">Card style</div>
-                    <div className="grid grid-cols-3 gap-2">
-                      {THEME_OPTIONS.map((t) => (
-                        <button
-                          key={t.id}
-                          onClick={() => setCardTheme(t.id)}
-                          className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all ${
-                            cardTheme === t.id
-                              ? "border-violet-400/60 bg-violet-500/10"
-                              : "border-white/10 bg-white/[0.02] hover:border-white/25"
-                          }`}
-                        >
-                          <span className={`w-full h-7 rounded-lg ${t.swatch}`} />
-                          <span className={`text-[10px] ${cardTheme === t.id ? "text-violet-300" : "text-white/40"}`}>{t.label}</span>
-                        </button>
-                      ))}
+              <motion.div
+                variants={{ animate: { transition: { staggerChildren: 0.05 } } }}
+                initial="initial"
+                animate="animate"
+                className="space-y-8"
+              >
+                {/* Web Sources */}
+                <motion.section
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <div className="flex items-center gap-2.5 mb-4">
+                    <motion.span
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                      className="w-2.5 h-2.5 rounded-full bg-emerald-400"
+                    />
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-white/45">Instant Connect</span>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-medium">
+                      <Smartphone className="w-3 h-3 inline-block mr-1" />
+                      Mobile OK
+                    </span>
+                    <span className="ml-auto text-[11px] text-white/25">
+                      {webSources.filter((s) => onboardedSources.has(s.id)).length}/{webSources.length}
+                    </span>
+                  </div>
+                  <motion.div
+                    className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                    variants={{ animate: { transition: { staggerChildren: 0.06 } } }}
+                  >
+                    {webSources.map((source, i) => (
+                      <motion.div key={source.id} variants={cardVariants} custom={i}>
+                        {renderSourceCard(source, i)}
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                </motion.section>
+
+                {/* Desktop Sources */}
+                <motion.section
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1 }}
+                >
+                  <div className="flex items-center gap-2.5 mb-4 flex-wrap">
+                    <motion.span
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
+                      className="w-2.5 h-2.5 rounded-full bg-orange-400"
+                    />
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-white/45">Deep Data</span>
+                    <span className="px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 text-[10px] font-medium">
+                      <Monitor className="w-3 h-3 inline-block mr-1" />
+                      Vana Desktop
+                    </span>
+                    <span className="ml-auto text-[11px] text-white/25">
+                      {desktopSources.filter((s) => onboardedSources.has(s.id)).length}/{desktopSources.length}
+                    </span>
+                    {!isDesktop && (
+                      <span className="text-[10px] text-white/30 font-normal hidden sm:inline flex items-center gap-1">
+                        <Monitor className="w-3 h-3" />
+                        Install on computer
+                      </span>
+                    )}
+                  </div>
+                  <motion.div
+                    className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                    variants={{ animate: { transition: { staggerChildren: 0.06 } } }}
+                  >
+                    {desktopSources.map((source, i) => (
+                      <motion.div key={source.id} variants={cardVariants} custom={i}>
+                        {renderSourceCard(source, i)}
+                      </motion.div>
+                    ))}
+                    {!isDesktop && (
+                      <motion.div
+                        variants={cardVariants}
+                        className="md:col-span-2 p-5 rounded-2xl border border-dashed border-white/[0.06] bg-white/[0.01]"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-xl bg-orange-500/15 shrink-0">
+                            <Monitor className="w-5 h-5 text-orange-400" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-white/80 mb-1">Unlock Deep Data with Vana Desktop</p>
+                            <p className="text-white/40 text-sm leading-relaxed">
+                              Steam games & playtime, YouTube watch history, ChatGPT conversations, Spotify listening history.
+                              <br />
+                              <span className="text-white/30 mt-2 inline-block">
+                                Install Vana Desktop at vana.org/desktop → connect accounts → come back and hit Connect.
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </motion.div>
+                </motion.section>
+              </motion.div>
+
+              {/* How it Works (Patina-style 3-step) */}
+              <motion.section
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5, duration: 0.6 }}
+                className="mt-12"
+              >
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="font-display w-10 h-10 rounded-2xl bg-cyan-500/15 border border-cyan-500/20 flex items-center justify-center text-sm font-semibold text-cyan-300">
+                    3
+                  </div>
+                  <div>
+                    <h2 className="font-display text-lg font-semibold tracking-tight leading-tight">How it works</h2>
+                    <p className="tracking-ui text-xs text-white/40 mt-0.5">Three steps to your Nodea card</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[
+                    {
+                      num: "01",
+                      icon: Link,
+                      title: "Connect an account",
+                      desc: "No wallet, no download, no seed phrase. Start with the account you've had the longest, and your score appears straight away. Add more to raise it.",
+                    },
+                    {
+                      num: "02",
+                      icon: Shield,
+                      title: "You approve what we read",
+                      desc: "Your accounts stay in your own store, not ours. You approve exactly what we read, we read it once, and you can revoke access whenever you want. We never see a password.",
+                    },
+                    {
+                      num: "03",
+                      icon: ArrowRight,
+                      title: "Save it, and it travels",
+                      desc: "Sign in with Google to keep your score across every device and put it on the leaderboard. Other apps can check it without you doing any of this again.",
+                    },
+                  ].map((step, i) => (
+                    <motion.div
+                      key={step.num}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 + i * 0.08, duration: 0.5 }}
+                      className="p-5 rounded-2xl glass glass-border relative"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="shrink-0 w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
+                          <step.icon className="w-5 h-5 text-cyan-300" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-mono text-lg font-semibold text-cyan-300 mb-1">{step.num}</div>
+                          <div className="font-medium text-white mb-1">{step.title}</div>
+                          <div className="text-sm text-white/50">{step.desc}</div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.section>
+
+              {/* Nodea Tag + Reward + Leaderboard (Patina-style gamification) */}
+              <motion.section
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.55, duration: 0.6 }}
+                className="mt-12"
+              >
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="font-display w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/20 flex items-center justify-center text-sm font-semibold text-amber-300">
+                    <Trophy className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="font-display text-lg font-semibold tracking-tight leading-tight">Standings & rewards</h2>
+                    <p className="tracking-ui text-xs text-white/40 mt-0.5">
+                      {poolInfo
+                        ? `${poolInfo.places} places · pool ${poolInfo.pool.toFixed(2)} VANA · closes ${poolInfo.cupClosesAt}`
+                        : "Vana Cup live standings"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Nodea Tag (sign-in equivalent) */}
+                <div className="p-5 rounded-2xl glass glass-border mb-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <UserPlus className="w-4 h-4 text-amber-300" />
+                    <div className="font-medium text-white text-sm">
+                      {identity?.username ? `You're on the board as @${identity.username}` : "Claim your Nodea Tag"}
                     </div>
                   </div>
-                  <DataSoulCard data={identityResult as Record<string, unknown>} />
-                  {/* Trait badges */}
-                  {identities.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {getTraits(identities.map((i) => i.source)).map((t: Trait) => (
-                        <span
-                          key={t.id}
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium border ${
-                            t.rarity === "epic"
-                              ? "bg-amber-500/10 border-amber-500/30 text-amber-300"
-                              : t.rarity === "rare"
-                              ? "bg-violet-500/10 border-violet-500/30 text-violet-300"
-                              : "bg-white/[0.04] border-white/10 text-white/50"
+                  <p className="text-sm text-white/50 mb-3">
+                    {identity?.username
+                      ? `Your tag: ${identity.username} · Referral ${identity.referralCode ? `nodea.app/?ref=${identity.referralCode}` : "—"}${
+                          referralCount > 0 ? ` · ${referralCount} referral${referralCount > 1 ? "s" : ""} seen` : ""
+                        }`
+                      : "A tag keeps your score across devices and puts you on the leaderboard. You get a referral link — when a friend connects through it and wins, you share the pot."}
+                  </p>
+                  {identity?.username ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        onClick={() => {
+                          if (identity.referralCode) {
+                            const url = referralUrl(identity.referralCode);
+                            navigator.clipboard?.writeText(url).catch(() => {});
+                            setStatusMessage(`Referral link copied: ${url}`);
+                          }
+                        }}
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/25 text-amber-200 text-sm font-medium transition-colors"
+                      >
+                        <Copy className="w-4 h-4" />
+                        Copy referral link
+                      </button>
+                      <span className="text-xs text-white/40">
+                        {poolInfo
+                          ? `You'd earn ${(poolInfo.championPayout * REWARD_CONFIG.shareOfWinnings).toFixed(2)} VANA if your referral wins`
+                          : `You'd earn ${REWARD_CONFIG.shareOfWinnings * 100}% of the pot if your referral wins`}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        value={tagInput}
+                        onChange={(e) => {
+                          setTagInput(e.target.value);
+                          if (tagState === "error") setTagState("idle");
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleClaimTag();
+                        }}
+                        placeholder="your tag — 3-24 chars"
+                        className="flex-1 min-w-0 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white placeholder:text-white/25 outline-none focus:border-amber-500/40 transition-colors"
+                        maxLength={24}
+                      />
+                      <motion.button
+                        whileHover={reducedMotion ? {} : { scale: 1.02 }}
+                        whileTap={reducedMotion ? {} : { scale: 0.97 }}
+                        onClick={handleClaimTag}
+                        disabled={tagState === "saving"}
+                        className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-200 text-sm font-medium transition-colors disabled:opacity-50"
+                      >
+                        {tagState === "saving" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                        {tagState === "saving" ? "Saving…" : "Claim"}
+                      </motion.button>
+                    </div>
+                  )}
+                  {tagState === "done" && identity?.username && (
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="mt-2 text-xs text-emerald-400"
+                    >
+                      Tag claimed — your referral link is ready above.
+                    </motion.p>
+                  )}
+                  {tagState === "error" && <p className="mt-2 text-xs text-red-400">{tagError}</p>}
+                </div>
+
+                {/* Leaderboard */}
+                <div className="p-5 rounded-2xl glass glass-border">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-sm font-semibold text-white/70 flex items-center gap-2">
+                      <BarChart2 className="w-4 h-4 text-amber-400" />
+                      Vana Cup leaderboard
+                    </div>
+                    <span className="text-[10px] uppercase tracking-wider text-white/30">Live</span>
+                  </div>
+                  {lbLoading && (
+                    <div className="flex items-center justify-center py-6 text-sm text-white/40 gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+                      Loading standings…
+                    </div>
+                  )}
+                  {!lbLoading && lbError && (
+                    <p className="text-sm text-white/40 py-3">{lbError}</p>
+                  )}
+                  {!lbLoading && !lbError && standings && (
+                    <div className="space-y-1.5 max-h-80 overflow-y-auto pr-1">
+                      {standings.map((entry) => (
+                        <div
+                          key={entry.app ?? entry.name}
+                          className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm ${
+                            entry.name.toLowerCase() === "nodea"
+                              ? "bg-amber-500/10 border border-amber-500/25"
+                              : entry.rank <= 3
+                              ? "bg-white/[0.04] border border-white/[0.06]"
+                              : "bg-white/[0.02] border border-transparent"
                           }`}
-                          title={t.desc}
                         >
-                          <span>{t.emoji}</span>
-                          {t.name}
-                          {t.rarity !== "common" && (
-                            <span className={`text-[8px] uppercase tracking-wider ${t.rarity === "epic" ? "text-amber-400/80" : "text-violet-400/80"}`}>
-                              {t.rarity}
-                            </span>
-                          )}
-                        </span>
+                          <div className="w-6 text-center font-mono text-xs text-white/40">{entry.rank}</div>
+                          <div className="w-6 h-6 rounded-lg overflow-hidden bg-white/[0.05] flex items-center justify-center">
+                            {entry.icon ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={entry.icon} alt="" className="w-full h-full object-cover" loading="lazy" />
+                            ) : (
+                              <Globe className="w-3.5 h-3.5 text-white/30" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="truncate font-medium text-white/85">{entry.name}</div>
+                            <div className="text-[10px] text-white/30">
+                              {entry.goals} goals · {entry.assists} assists
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-mono text-sm font-semibold text-white/90">{entry.points}</div>
+                            {entry.delta > 0 && <div className="text-[10px] text-emerald-400">▲{entry.delta}</div>}
+                          </div>
+                        </div>
                       ))}
                     </div>
                   )}
-                  {/* Share actions */}
-                  <div className="mt-4 grid grid-cols-2 gap-2">
-                    <button
-                      onClick={shareCard}
-                      disabled={generating || connectState !== "idle"}
-                      className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 hover:shadow-lg hover:shadow-violet-500/25 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-4 h-4" aria-hidden="true">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
-                      </svg>
-                      Share
-                    </button>
-                    <button
-                      onClick={copyCardLink}
-                      disabled={generating || connectState !== "idle"}
-                      className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 hover:border-white/25 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-4 h-4" aria-hidden="true">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" />
-                      </svg>
-                      Copy link
-                    </button>
-                    <button
-                      onClick={downloadCardPng}
-                      disabled={generating || connectState !== "idle"}
-                      className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 hover:border-white/25 transition-all disabled:opacity-40 disabled:cursor-not-allowed col-span-2"
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-4 h-4" aria-hidden="true">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                      </svg>
-                      Download card image
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div className="h-96 flex flex-col items-center justify-center border border-dashed border-white/[0.08] rounded-2xl bg-white/[0.01]">
-                  <AppLogo size={56} className="opacity-30 mb-4" />
-                  <div className="text-white/30 text-sm">Your Nodea card will appear here</div>
-                  <div className="text-white/20 text-xs mt-1">Connect sources → Generate</div>
+                  {!lbLoading && !lbError && standings && poolInfo && (
+                    <div className="mt-4 pt-4 border-t border-white/[0.06] grid grid-cols-2 gap-3 text-center">
+                      <div>
+                        <div className="font-display font-semibold text-xl gradient-brand">{poolInfo.pool.toFixed(2)}</div>
+                        <div className="tracking-ui text-[10px] uppercase tracking-wider text-white/30">Pool (VANA)</div>
+                      </div>
+                      <div>
+                        <div className="font-display font-semibold text-xl gradient-cyan-pink">{poolInfo.championPayout.toFixed(2)}</div>
+                        <div className="tracking-ui text-[10px] uppercase tracking-wider text-white/30">Champion payout</div>
+                      </div>
+                      <div>
+                        <div className="font-display font-semibold text-xl text-white/85">{poolInfo.runnerUp}</div>
+                        <div className="tracking-ui text-[10px] uppercase tracking-wider text-white/30">Runner-up (VANA)</div>
+                      </div>
+                      <div>
+                        <div className="font-display font-semibold text-xl text-white/85">{poolInfo.places}</div>
+                        <div className="tracking-ui text-[10px] uppercase tracking-wider text-white/30">Paid places</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
+              </motion.section>
+
+              {/* Instruction Copy (Patina-style) */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6, duration: 0.5 }}
+                className="mt-8 p-4 rounded-2xl bg-white/[0.02] border border-white/[0.04]"
+              >
+                <p className="text-sm text-white/60 leading-relaxed">
+                  Each source is approved separately, because Vana asks for one at a time. Approving opens a Vana tab — enter your profile there, approve, and keep both tabs open until it says connected. That tab hands the data over; this one collects it. We never see a password, and you can revoke access from your Vana account whenever you want.
+                </p>
+              </motion.div>
+
+              {/* Generate Button */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.6, ease: easeOut }}
+                className="mt-10"
+              >
+                <motion.button
+                  whileHover={reducedMotion ? {} : { scale: 1.02, y: -2 }}
+                  whileTap={reducedMotion ? {} : { scale: 0.98 }}
+                  onClick={handleGenerate}
+                  disabled={generating || identities.length === 0 || connectState !== "idle"}
+                  className="w-full py-5 rounded-2xl text-lg font-semibold tracking-tight flex items-center justify-center gap-3 transition-all duration-300 ease-out group disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:y-0"
+                  style={{
+                    background: "linear-gradient(135deg, #a855f7 0%, #d946ef 50%, #f472b6 100%)",
+                    boxShadow: "0 0 40px -10px rgba(168,85,247,0.4)",
+                  }}
+                >
+                  <motion.svg
+                    animate={{ rotate: generating ? 360 : 0 }}
+                    transition={{ duration: 1, repeat: generating ? Infinity : 0, ease: "linear" }}
+                    className="w-6 h-6"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z" />
+                    <path d="M18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z" />
+                  </motion.svg>
+                  <span>
+                    {generating
+                      ? "Generating…"
+                      : identities.length > 0
+                      ? `Generate Nodea Card${identities.length > 1 ? ` (${identities.length} sources)` : ""}`
+                      : "Connect at least one source"}
+                  </span>
+                </motion.button>
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="text-center text-[11px] text-white/25 mt-3"
+                >
+                  Your card is generated from real connected data — no questionnaire.
+                </motion.p>
+              </motion.div>
+
+              {/* Connected Sources Summary */}
+              {identities.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5, duration: 0.5 }}
+                  className="mt-10 p-5 rounded-2xl glass glass-border"
+                >
+                  <h3 className="text-sm font-semibold mb-4 text-white/70 flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-violet-400" />
+                    Connected sources
+                  </h3>
+                  <motion.div
+                    className="flex flex-wrap gap-2"
+                    variants={{ animate: { transition: { staggerChildren: 0.04 } } }}
+                  >
+                    {identities.map((id) => {
+                      const src = DATA_SOURCES.find((s) => s.id === id.source);
+                      return (
+                        <motion.span
+                          key={id.source}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          whileHover={reducedMotion ? {} : { scale: 1.05 }}
+                          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-sm text-white/70 transition-colors hover:border-white/15 hover:bg-white/[0.05]"
+                        >
+                          {src && <BrandIcon id={src.icon} size={14} />}
+                          {id.source}
+                        </motion.span>
+                      );
+                    })}
+                  </motion.div>
+                </motion.div>
               )}
-            </div>
-          </div>
+            </motion.div>
 
-          {/* Connected Sources Summary */}
-          {identities.length > 0 && (
-            <div className="mt-12 p-5 bg-white/[0.02] border border-white/[0.07] rounded-2xl">
-              <h4 className="text-sm font-semibold mb-3 text-white/70">Connected sources</h4>
-              <div className="flex flex-wrap gap-2.5">
-                {identities.map((id) => {
-                  const src = DATA_SOURCES.find((s) => s.id === id.source);
-                  return (
-                    <span
-                      key={id.source}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-white/70"
-                    >
-                      {src && <BrandIcon id={src.icon} size={14} />}
-                      {id.source}
-                    </span>
-                  );
-                })}
+            {/* Right: Score + Result Preview */}
+            <motion.div
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3, duration: 0.6, ease: easeOut }}
+              className="lg:sticky lg:top-28"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="font-display w-10 h-10 rounded-2xl bg-fuchsia-500/15 border border-fuchsia-500/20 flex items-center justify-center text-sm font-semibold text-fuchsia-300">
+                  2
+                </div>
+                <div>
+                  <h2 className="font-display text-lg font-semibold tracking-tight leading-tight">Your Identity</h2>
+                  <p className="tracking-ui text-xs text-white/40 mt-0.5">Your digital identity from connected data</p>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
 
-        {/* Footer */}
-        <footer className="border-t border-white/[0.06] py-8">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+              {/* Score Breakdown (Patina-style) */}
+              {soulScore && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1, duration: 0.5 }}
+                  className="mb-6 p-5 rounded-2xl glass glass-border"
+                >
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="p-2 rounded-xl bg-violet-500/15">
+                      <BarChart2 className="w-5 h-5 text-violet-300" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-white">Score Breakdown</div>
+                      <div className="tracking-ui text-[10px] text-white/35">How your Soul Score adds up</div>
+                    </div>
+                  </div>
+                  <ScoreBreakdown components={soulScore.components} />
+                </motion.div>
+              )}
+
+              <AnimatePresence mode="wait">
+                {identityResult ? (
+                  <motion.div
+                    key="result"
+                    initial={{ opacity: 0, y: 20, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -20, scale: 0.98 }}
+                    transition={{ duration: 0.4, ease: easeOut }}
+                    className="space-y-5"
+                  >
+                    {/* Theme Picker */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 }}
+                      className="p-4 rounded-2xl glass glass-border"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="text-[10px] font-semibold uppercase tracking-wider text-white/40 flex items-center gap-1.5">
+                          <Palette className="w-4 h-4" />
+                          Card Style
+                        </div>
+                        <motion.span
+                          animate={{ scale: [1, 1.05, 1] }}
+                          transition={{ duration: 3, repeat: Infinity }}
+                          className="text-[10px] text-violet-400/70"
+                        >
+                          Preview
+                        </motion.span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {THEME_OPTIONS.map((t) => (
+                          <motion.button
+                            key={t.id}
+                            whileHover={reducedMotion ? {} : { scale: 1.05, y: -2 }}
+                            whileTap={reducedMotion ? {} : { scale: 0.98 }}
+                            onClick={() => setCardTheme(t.id)}
+                            className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all duration-300 ${
+                              cardTheme === t.id
+                                ? "border-violet-400/50 bg-violet-500/10 shadow-[0_0_30px_-5px_rgba(168,85,247,0.3)]"
+                                : "border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]"
+                            }`}
+                          >
+                            <motion.div
+                              animate={{ scale: cardTheme === t.id ? 1.02 : 1 }}
+                              transition={{ duration: 0.3 }}
+                              className={`w-full h-10 rounded-lg ${t.swatch}`}
+                            />
+                            <motion.span
+                              className={`text-[10px] font-medium ${
+                                cardTheme === t.id ? "text-violet-300" : "text-white/40"
+                              }`}
+                            >
+                              {t.label}
+                            </motion.span>
+                          </motion.button>
+                        ))}
+                      </div>
+                    </motion.div>
+
+                    {/* Card Preview */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.15 }}
+                      className="relative"
+                    >
+                      <DataSoulCard data={identityResult as Record<string, unknown>} />
+                    </motion.div>
+
+                    {/* Trait Badges */}
+                    {identities.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="p-4 rounded-2xl glass glass-border"
+                      >
+                        <div className="text-[10px] font-semibold uppercase tracking-wider text-white/40 mb-3 flex items-center gap-1.5">
+                          <Sparkles className="w-4 h-4" />
+                          Traits
+                        </div>
+                        <motion.div
+                          className="flex flex-wrap gap-2"
+                          variants={{ animate: { transition: { staggerChildren: 0.04 } } }}
+                        >
+                          {getTraits(identities.map((i) => i.source)).map((t: Trait) => (
+                            <motion.span
+                              key={t.id}
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              whileHover={reducedMotion ? {} : { scale: 1.05, y: -2 }}
+                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium border ${
+                                t.rarity === "epic"
+                                  ? "bg-amber-500/10 border-amber-500/30 text-amber-300 shadow-[0_0_20px_-5px_rgba(251,191,36,0.2)]"
+                                  : t.rarity === "rare"
+                                  ? "bg-violet-500/10 border-violet-500/30 text-violet-300 shadow-[0_0_20px_-5px_rgba(168,85,247,0.2)]"
+                                  : "bg-white/[0.03] border-white/10 text-white/50"
+                              }`}
+                              title={t.desc}
+                            >
+                              <span>{t.emoji}</span>
+                              {t.name}
+                              {t.rarity !== "common" && (
+                                <span
+                                  className={`text-[8px] uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
+                                    t.rarity === "epic"
+                                      ? "bg-amber-500/20 text-amber-400"
+                                      : "bg-violet-500/20 text-violet-400"
+                                  }`}
+                                >
+                                  {t.rarity}
+                                </span>
+                              )}
+                            </motion.span>
+                          ))}
+                        </motion.div>
+                      </motion.div>
+                    )}
+
+                    {/* Share Actions */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.25 }}
+                      className="grid grid-cols-2 gap-2"
+                    >
+                      <motion.button
+                        whileHover={reducedMotion ? {} : { scale: 1.02, y: -2 }}
+                        whileTap={reducedMotion ? {} : { scale: 0.98 }}
+                        onClick={shareCard}
+                        disabled={generating || connectState !== "idle"}
+                        className="flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-semibold text-[#060608] transition-all duration-300 group disabled:opacity-40 disabled:cursor-not-allowed"
+                        style={{
+                          background: "linear-gradient(135deg, #a855f7 0%, #d946ef 100%)",
+                          boxShadow: "0 0 30px -5px rgba(168,85,247,0.4)",
+                        }}
+                      >
+                        <Share2 className="w-4.5 h-4.5" />
+                        <span>Share</span>
+                        <motion.span
+                          animate={{ x: [0, 3, 0] }}
+                          transition={{ duration: 1.5, repeat: Infinity, delay: 1 }}
+                          className="text-[10px]"
+                        >
+                          ➜
+                        </motion.span>
+                      </motion.button>
+
+                      <motion.button
+                        whileHover={reducedMotion ? {} : { scale: 1.02, y: -2 }}
+                        whileTap={reducedMotion ? {} : { scale: 0.98 }}
+                        onClick={copyCardLink}
+                        disabled={generating || connectState !== "idle"}
+                        className="flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-semibold bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <Copy className="w-4.5 h-4.5" />
+                        Copy Link
+                      </motion.button>
+
+                      <motion.button
+                        whileHover={reducedMotion ? {} : { scale: 1.02, y: -2 }}
+                        whileTap={reducedMotion ? {} : { scale: 0.98 }}
+                        onClick={downloadCardPng}
+                        disabled={generating || connectState !== "idle"}
+                        className="col-span-2 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-semibold bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <Download className="w-4.5 h-4.5" />
+                        Download Card Image
+                        <LucideImage className="w-4.5 h-4.5" />
+                      </motion.button>
+                    </motion.div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="empty"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="h-[420px] flex flex-col items-center justify-center border border-dashed border-white/[0.06] rounded-2xl bg-white/[0.01]"
+                  >
+                    <motion.div
+                      animate={{ scale: [1, 1.05, 1], rotate: [0, 2, -2, 0] }}
+                      transition={{ duration: 3, repeat: Infinity }}
+                      className="mb-5 opacity-30"
+                    >
+                      <AppLogo size={64} />
+                    </motion.div>
+                    <div className="text-white/30 text-sm text-center px-6">Your Nodea card will appear here</div>
+                    <div className="text-white/20 text-xs mt-1">Connect sources → Generate</div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          </motion.div>
+        </main>
+
+        {/* ── Footer ── */}
+        <motion.footer
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.5 }}
+          className="border-t border-white/[0.04] py-8 mt-16 md:mt-24"
+        >
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2 text-sm text-white/35">
               <AppLogo size={20} />
-              <span>Nodea</span>
+              <span className="font-medium">Nodea</span>
             </div>
-            <div className="text-xs text-white/25">
+            <div className="text-xs text-white/25 text-center sm:text-right">
               Data stays yours. Read with permission via Vana Data Portability.
             </div>
           </div>
-        </footer>
+        </motion.footer>
+
+        {/* ── Pre-flight Profile Link Check Modal ── */}
+        <AnimatePresence>
+          {checkOpen && checkSource && (
+            <motion.div
+              key="linkcheck"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+              onClick={() => setCheckOpen(false)}
+            >
+              <div className="absolute inset-0 bg-black/70 backdrop-blur-md" />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                transition={{ duration: 0.25, ease: easeOut }}
+                className="relative w-full max-w-md glass rounded-3xl border border-white/10 p-6 shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <BrandIconTile id={checkSource.icon} size={40} />
+                    <div>
+                      <h3 className="font-semibold text-white">Connect {checkSource.name}</h3>
+                      <p className="text-[11px] text-white/45">Verify your profile link first</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setCheckOpen(false)}
+                    className="text-white/40 hover:text-white transition-colors p-1"
+                    aria-label="Close"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {checkState === "ok" && checkResult ? (
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-3.5">
+                      <CheckCircle className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-sm text-emerald-300 font-medium">Link valid ✓</p>
+                        <p className="text-xs text-white/50 mt-0.5">
+                          Your profile resolves. Use this exact link on the Vana page:
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] p-3 font-mono text-xs text-white/80 break-all">
+                      <span className="flex-1 min-w-0">
+                        {(checkResult as Record<string, unknown>).canonicalUrl as string}
+                      </span>
+                      <button
+                        onClick={copyCanonical}
+                        className="shrink-0 p-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] transition-colors"
+                        aria-label="Copy"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <ol className="text-xs text-white/45 space-y-1.5 list-decimal list-inside">
+                      <li>Tap Copy above (or long-press the link).</li>
+                      <li>Continue to the Vana tab.</li>
+                      <li>Paste that link where Vana asks — it will resolve now.</li>
+                    </ol>
+                    <button
+                      onClick={proceedToVana}
+                      className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-[#060608] transition-all"
+                      style={{
+                        background: "linear-gradient(135deg, #a855f7 0%, #d946ef 100%)",
+                        boxShadow: "0 0 30px -5px rgba(168,85,247,0.4)",
+                      }}
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      Continue to Vana
+                    </button>
+                  </div>
+                ) : checkState === "fail" && checkResult ? (
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3 rounded-xl border border-rose-500/30 bg-rose-500/[0.06] p-3.5">
+                      <AlertCircle className="w-5 h-5 text-rose-400 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-sm text-rose-300 font-medium">
+                          {(checkResult as Record<string, unknown>).error as string}
+                        </p>
+                        {checkHint && (
+                          <p className="text-xs text-white/50 mt-1 leading-relaxed">{checkHint}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        ref={checkInputRef}
+                        value={checkInput}
+                        onChange={(e) => setCheckInput(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && runLinkCheck()}
+                        placeholder={
+                          checkSource.handle?.placeholder ||
+                          "Paste your profile link or handle"
+                        }
+                        className="flex-1 rounded-xl bg-white/[0.05] border border-white/10 px-3.5 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-violet-400/50 focus:bg-white/[0.07] transition-colors"
+                      />
+                      <button
+                        onClick={runLinkCheck}
+                        disabled={!checkInput.trim()}
+                        className="px-4 py-2.5 rounded-xl text-sm font-medium bg-white/[0.08] hover:bg-white/[0.14] border border-white/10 disabled:opacity-40 transition-colors"
+                      >
+                        Verify
+                      </button>
+                    </div>
+                  </div>
+                ) : checkState === "checking" ? (
+                  <div className="flex flex-col items-center justify-center py-8">
+                    <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+                    <p className="text-sm text-white/50 mt-4">Checking your profile link…</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <p className="text-xs text-white/55 leading-relaxed">
+                      Vana will ask for your <span className="text-white/80">{checkSource.name}</span>{" "}
+                      profile link on the next page. Enter it here so we can verify it resolves
+                      before you continue — that prevents the “profile not found” error.
+                    </p>
+                    {checkHint && (
+                      <p className="text-xs text-white/40 italic leading-relaxed">{checkHint}</p>
+                    )}
+                    <div className="flex gap-2">
+                      <input
+                        ref={checkInputRef}
+                        value={checkInput}
+                        onChange={(e) => setCheckInput(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && runLinkCheck()}
+                        placeholder={
+                          checkSource.handle?.placeholder ||
+                          "Paste your profile link or @handle"
+                        }
+                        className="flex-1 rounded-xl bg-white/[0.05] border border-white/10 px-3.5 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-violet-400/50 focus:bg-white/[0.07] transition-colors"
+                      />
+                      <button
+                        onClick={runLinkCheck}
+                        disabled={!checkInput.trim()}
+                        className="px-4 py-2.5 rounded-xl text-sm font-medium bg-white/[0.08] hover:bg-white/[0.14] border border-white/10 disabled:opacity-40 transition-colors"
+                      >
+                        Verify
+                      </button>
+                    </div>
+                    <button
+                      onClick={proceedToVana}
+                      className="w-full py-2.5 rounded-xl text-sm text-white/45 hover:text-white/70 border border-white/[0.06] transition-colors"
+                    >
+                      Skip — proceed without checking
+                    </button>
+                  </div>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-    </main>
+    </motion.div>
   );
 }
