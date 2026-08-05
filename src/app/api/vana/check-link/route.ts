@@ -117,24 +117,31 @@ function canonicalize(source: string, input: string): { url: string; name: strin
   }
 
   if (source === "instagram") {
-    // Capture the segment BEFORE the username too, so /p/ /reel/ /reels/ /tv/
-    // /explore/ post links are rejected instead of being read as a username.
-    const m = s.match(/(?:instagram\.com|instagr\.am)\/([^/?#]+)?\/?([A-Za-z0-9_.]{1,30})(?:\/|$|\?)/i);
+    // Bare username: "nasa"
     const bare = !hasScheme && /^[A-Za-z0-9_.]{1,30}$/.test(s) ? s : null;
-    const badPrefixes = /^(p|reel|reels|tv|explore|accounts|stories|tags|discover|create)$/i;
-    let name: string | null = null;
-    if (m) {
-      const seg = m[1] || "";
-      const candidate = m[2];
-      if (badPrefixes.test(seg)) {
-        name = null; // post/reel/tv/explore link — not a profile
-      } else if (!badPrefixes.test(candidate)) {
-        name = candidate;
+    if (bare) return { url: `https://www.instagram.com/${bare}/`, name: bare };
+
+    // URL (with or without scheme): parse host + path explicitly.
+    let path = "";
+    try {
+      const u = new URL(hasScheme ? s : `https://${s}`);
+      const host = u.hostname.replace(/^www\./, "").toLowerCase();
+      if (!(host === "instagram.com" || host.endsWith(".instagram.com") || host === "instagr.am" || host.endsWith(".instagr.am"))) {
+        return null;
       }
+      path = u.pathname;
+    } catch {
+      return null;
     }
-    name = name || bare;
-    if (name) return { url: `https://www.instagram.com/${name}/`, name };
-    return null;
+
+    const segs = path.split("/").filter(Boolean);
+    if (segs.length === 0) return null;
+    const first = segs[0];
+    // Post/reel/TV/stories/tags/explore/accounts links are NOT profiles.
+    const badPrefixes = /^(p|reel|reels|tv|explore|accounts|stories|tags|discover|create)$/i;
+    if (badPrefixes.test(first)) return null;
+    if (!/^[A-Za-z0-9_.]{1,30}$/.test(first)) return null;
+    return { url: `https://www.instagram.com/${first}/`, name: first };
   }
 
   return null;
@@ -219,7 +226,7 @@ export async function POST(request: NextRequest) {
         "YouTube wants your CHANNEL link: youtube.com/@YourHandle, youtube.com/c/… or youtube.com/channel/UC… (video links like youtu.be/… or watch?v=… won't work). Open your channel → copy the URL from the address bar.",
       github: "GitHub wants your profile link: github.com/<username>.",
       instagram:
-        "Instagram wants your profile link: instagram.com/<username>. (Reels/post links are trimmed automatically.)",
+        "Instagram wants your PROFILE link: instagram.com/<username>. (Post/reel/TV/stories links won't work — find your profile and copy that URL.)",
     };
 
     const canonical = canonicalize(source, url);
