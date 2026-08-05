@@ -917,7 +917,7 @@ export default function PageClient() {
                   whileTap={reducedMotion ? {} : { scale: 0.95 }}
                   onClick={() => openLinkCheck(source, "web")}
                   disabled={connectState !== "idle" || generating}
-                  className="px-3 py-1.5 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-xs font-medium transition-colors"
+                  className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] px-3 py-1.5 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-xs font-medium transition-colors"
                   title="Profile only — works anywhere"
                 >
                   Profile
@@ -927,7 +927,7 @@ export default function PageClient() {
                   whileTap={reducedMotion ? {} : { scale: 0.95 }}
                   onClick={() => openLinkCheck(source, "full")}
                   disabled={connectState !== "idle" || generating}
-                  className="px-3 py-1.5 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 hover:border-blue-500/50 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-xs font-medium text-blue-200 transition-colors"
+                  className="inline-flex items-center justify-center min-h-[44px] px-3 py-1.5 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 hover:border-blue-500/50 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-xs font-medium text-blue-200 transition-colors"
                   title="Watch history, likes, subscriptions — needs Vana Desktop"
                 >
                   Deep
@@ -939,7 +939,7 @@ export default function PageClient() {
                 whileTap={reducedMotion ? {} : { scale: 0.98 }}
                 onClick={() => openLinkCheck(source, isDesktopOnly ? "full" : "web")}
                 disabled={connectState !== "idle" || generating || isConnected}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                className={`inline-flex items-center justify-center min-w-[44px] min-h-[44px] px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                   isConnected
                     ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 cursor-default"
                     : "bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
@@ -1143,7 +1143,7 @@ export default function PageClient() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16 md:h-[72px]">
               {/* Logo */}
-              <button onClick={() => goView("home")} className="flex items-center gap-2.5 shrink-0" aria-label="Nodea home">
+              <button onClick={() => goView("home")} className="flex items-center gap-2.5 shrink-0 min-h-[44px]" aria-label="Nodea home">
                 <AppLogo size={34} />
                 <span className="font-display text-lg font-semibold tracking-tight text-white">Nodea</span>
               </button>
@@ -1160,7 +1160,7 @@ export default function PageClient() {
                   <button
                     key={item.label}
                     onClick={() => goView(item.v as ViewKey, item.anchor)}
-                    className="px-3.5 py-2 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/[0.05] transition-colors font-medium"
+                    className="px-3.5 py-2 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/[0.05] transition-colors font-medium min-h-[44px] inline-flex items-center"
                   >
                     {item.label}
                   </button>
@@ -1179,7 +1179,7 @@ export default function PageClient() {
                   whileHover={reducedMotion ? {} : { scale: 1.03, y: -1 }}
                   whileTap={reducedMotion ? {} : { scale: 0.97 }}
                   onClick={() => goView("connect")}
-                  className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-shadow duration-300"
+                  className="hidden sm:inline-flex items-center justify-center min-h-[44px] gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-shadow duration-300"
                   style={{
                     background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)",
                     boxShadow: "0 0 24px -6px rgba(79,140,255,0.55)",
@@ -1191,7 +1191,7 @@ export default function PageClient() {
                 {/* Theme toggle */}
                 <button
                   onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
-                  className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white/80 hover:text-white hover:bg-white/[0.08] transition-colors"
+                  className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white/80 hover:text-white hover:bg-white/[0.08] transition-colors"
                   aria-label="Toggle light / dark theme"
                   title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
                 >
@@ -1200,7 +1200,7 @@ export default function PageClient() {
                 {/* Mobile hamburger */}
                 <button
                   onClick={() => setNavOpen((v) => !v)}
-                  className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08]"
+                  className="md:hidden inline-flex items-center justify-center w-11 h-11 rounded-xl bg-white/[0.04] border border-white/[0.08]"
                   aria-label="Menu"
                 >
                   {navOpen ? <X className="w-5 h-5 text-white/80" /> : <Menu className="w-5 h-5 text-white/80" />}
@@ -1229,14 +1229,14 @@ export default function PageClient() {
                       <button
                         key={item.label}
                         onClick={() => goView(item.v as ViewKey, item.anchor)}
-                        className="w-full text-left px-3 py-2.5 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/[0.05] transition-colors font-medium"
+                        className="w-full text-left px-3 py-3 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/[0.05] transition-colors font-medium"
                       >
                         {item.label}
                       </button>
                     ))}
                     <button
                       onClick={() => goView("connect")}
-                      className="w-full mt-2 px-3 py-2.5 rounded-lg text-sm font-semibold text-white"
+                      className="w-full mt-2 px-3 py-3 rounded-lg text-sm font-semibold text-white"
                       style={{ background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)" }}
                     >
                       Connect your data
@@ -1318,7 +1318,7 @@ export default function PageClient() {
                 whileHover={reducedMotion ? {} : { scale: 1.03, y: -1 }}
                 whileTap={reducedMotion ? {} : { scale: 0.97 }}
                 onClick={() => goView("standings")}
-                className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-2xl text-base font-semibold text-white/80 border border-white/[0.1] bg-white/[0.03] hover:bg-white/[0.06] hover:text-white transition-colors"
+                className="inline-flex items-center justify-center min-h-[44px] gap-2.5 px-7 py-3.5 rounded-2xl text-base font-semibold text-white/80 border border-white/[0.1] bg-white/[0.03] hover:bg-white/[0.06] hover:text-white transition-colors"
               >
                 <Trophy className="w-5 h-5 text-amber-300" />
                 View leaderboard
@@ -1520,7 +1520,7 @@ export default function PageClient() {
                   href={`https://app.vana.org/data-connection-requests/${activeRequestId}?mode=page`}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 text-yellow-300 rounded-xl font-medium transition-colors"
+                  className="inline-flex items-center justify-center min-h-[44px] gap-2 px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 text-yellow-300 rounded-xl font-medium transition-colors"
                 >
                   Open Vana approval
                   <ExternalLink className="w-4 h-4" />
@@ -1836,7 +1836,7 @@ export default function PageClient() {
                             setStatusMessage(`Referral link copied: ${url}`);
                           }
                         }}
-                        className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/25 text-amber-200 text-sm font-medium transition-colors"
+                        className="inline-flex items-center justify-center min-h-[44px] gap-2 px-3 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/25 text-amber-200 text-sm font-medium transition-colors"
                       >
                         <Copy className="w-4 h-4" />
                         Copy referral link
@@ -2517,7 +2517,7 @@ export default function PageClient() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14">
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-[1.5fr_1fr_1fr_1fr] gap-8">
               <div className="col-span-2 md:col-span-4 lg:col-span-1">
-                <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="flex items-center gap-2.5 mb-4">
+                <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="flex items-center gap-2.5 mb-4 min-h-[44px]" aria-label="Back to top">
                   <AppLogo size={28} />
                   <span className="font-display text-lg font-semibold tracking-tight text-white">Nodea</span>
                 </button>
@@ -2546,7 +2546,7 @@ export default function PageClient() {
                     <li key={l.label}>
                       <button
                         onClick={() => goView(l.v as ViewKey, l.anchor)}
-                        className="text-sm text-white/50 hover:text-white transition-colors"
+                        className="inline-flex items-center min-h-[44px] text-sm text-white/50 hover:text-white transition-colors"
                       >
                         {l.label}
                       </button>
@@ -2562,7 +2562,7 @@ export default function PageClient() {
                     <li key={s.id}>
                       <button
                         onClick={() => goView("connect")}
-                        className="text-sm text-white/50 hover:text-white transition-colors"
+                        className="inline-flex items-center min-w-[44px] min-h-[44px] text-sm text-white/50 hover:text-white transition-colors"
                       >
                         {s.name}
                       </button>
@@ -2574,9 +2574,9 @@ export default function PageClient() {
               <div>
                 <h4 className="text-xs font-semibold uppercase tracking-widest text-white/45 mb-4">Powered by</h4>
                 <ul className="space-y-2.5">
-                  <li><a href="https://www.vana.org" target="_blank" rel="noopener noreferrer" className="text-sm text-white/50 hover:text-white transition-colors">Vana Data Portability</a></li>
-                  <li><a href="https://www.vana.org/cup" target="_blank" rel="noopener noreferrer" className="text-sm text-white/50 hover:text-white transition-colors">Vana Cup 2026</a></li>
-                  <li><a href="https://github.com/rezkyrafael2901/nodea" target="_blank" rel="noopener noreferrer" className="text-sm text-white/50 hover:text-white transition-colors">Open source</a></li>
+                  <li><a href="https://www.vana.org" target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] text-sm text-white/50 hover:text-white transition-colors">Vana Data Portability</a></li>
+                  <li><a href="https://www.vana.org/cup" target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] text-sm text-white/50 hover:text-white transition-colors">Vana Cup 2026</a></li>
+                  <li><a href="https://github.com/rezkyrafael2901/nodea" target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] text-sm text-white/50 hover:text-white transition-colors">Open source</a></li>
                 </ul>
               </div>
             </div>
