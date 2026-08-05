@@ -766,3 +766,5 @@
 [data-theme="light"] .text-white\/85 { color: rgba(15, 23, 42,85.0) !important; }
 [data-theme="light"] .text-white\/90 { color: rgba(15, 23, 42,90.0) !important; }
 [data-theme="light"] .to-white { --tw-gradient-from: #FFFFFF; --tw-gradient-to: #FFFFFF; }
+/* GitHub brand tile — monochrome, must flip with theme */
+[data-theme="light"] .github-tile { background: rgba(15, 23, 42, 0.06) !important; border-color: rgba(15, 23, 42, 0.1) !important; }

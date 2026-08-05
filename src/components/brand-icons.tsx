@@ -15,7 +15,9 @@ interface BrandIconProps {
 }
 
 const BRAND_COLORS: Record<BrandId, string> = {
-  github: "#ffffff",
+  // GitHub is monochrome: use currentColor so it flips with theme
+  // (text-white → white in dark, #0F172A in light via globals.css).
+  github: "currentColor",
   instagram: "#E4405F",
   chatgpt: "#10A37F",
   spotify: "#1DB954",
@@ -88,7 +90,7 @@ export function BrandIconTile({ id, size = 44, className }: { id: BrandId; size?
 
   return (
     <div
-      className={`flex items-center justify-center rounded-xl border border-white/10 ${tileBg[id]} ${className ?? ""}`}
+      className={`${id === "github" ? "github-tile " : ""}flex items-center justify-center rounded-xl border border-white/10 ${tileBg[id]} ${className ?? ""}`}
       style={{ width: size, height: size }}
     >
       <BrandIcon id={id} size={Math.round(size * 0.56)} className={iconColor[id]} />
