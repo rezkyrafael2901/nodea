@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Inter_Tight, Noto_Sans } from "next/font/google";
+import { Inter, Azeret_Mono, EB_Garamond } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -7,16 +7,17 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
-const interTight = Inter_Tight({
-  variable: "--font-inter-tight",
+const azeretMono = Azeret_Mono({
+  variable: "--font-azeret-mono",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
+  weight: ["400", "500", "600"],
 });
 
-const notoSans = Noto_Sans({
-  variable: "--font-noto-sans",
+const ebGaramond = EB_Garamond({
+  variable: "--font-eb-garamond",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
+  weight: ["400", "500"],
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
@@ -47,7 +48,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-theme="dark">
+    <html
+      lang="en"
+      data-theme="dark"
+      className={`${inter.variable} ${azeretMono.variable} ${ebGaramond.variable}`}
+    >
       <head>
         {/* Anti-flash: apply saved theme before first paint */}
         <script
@@ -56,9 +61,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body
-        className={`${inter.variable} ${interTight.variable} ${notoSans.variable} antialiased min-h-screen`}
-      >
+      <body className="antialiased min-h-screen">
         {children}
       </body>
     </html>

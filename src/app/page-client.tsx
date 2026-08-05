@@ -62,6 +62,9 @@ import {
   Star,
   Sun,
   Moon,
+  Home,
+  Newspaper,
+  CreditCard,
   TrendingUp,
   ArrowUpRight,
   BarChart2,
@@ -214,6 +217,26 @@ export default function PageClient() {
     document.documentElement.setAttribute("data-theme", theme);
     try { window.localStorage.setItem("nodea-theme", theme); } catch {}
   }, [theme]);
+
+  // ── Scroll-spy for bottom nav (Patina-style tab bar) ──
+  const [activeTab, setActiveTab] = useState("hero");
+  useEffect(() => {
+    const ids = ["hero", "intro", "article", "connect", "how", "standings", "identity"];
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter((e) => e.isIntersecting);
+        if (!visible.length) return;
+        const top = visible.sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        setActiveTab(top.target.id);
+      },
+      { rootMargin: "-40% 0px -55% 0px", threshold: [0, 0.02, 0.05, 0.15, 0.3, 0.5] }
+    );
+    ids.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) obs.observe(el);
+    });
+    return () => obs.disconnect();
+  }, []);
 
   const [scrolled, setScrolled] = useState(false);
 
@@ -1075,7 +1098,7 @@ export default function PageClient() {
       initial="initial"
       animate="animate"
       variants={pageVariants}
-      className="min-h-screen bg-[var(--color-bg)] text-white relative overflow-x-hidden"
+      className="min-h-screen bg-[var(--color-bg)] text-white relative overflow-x-hidden pb-24"
     >
       {/* ── Animated Background ── */}
       <motion.div
@@ -1139,6 +1162,7 @@ export default function PageClient() {
                 {[
                   { id: "connect", label: "Connect" },
                   { id: "how", label: "How it works" },
+                  { id: "article", label: "Article" },
                   { id: "standings", label: "Standings" },
                   { id: "identity", label: "Your card" },
                 ].map((item) => (
@@ -1207,6 +1231,7 @@ export default function PageClient() {
                     {[
                       { id: "connect", label: "Connect" },
                       { id: "how", label: "How it works" },
+                      { id: "article", label: "Article" },
                       { id: "standings", label: "Standings" },
                       { id: "identity", label: "Your card" },
                     ].map((item) => (
@@ -1331,7 +1356,7 @@ export default function PageClient() {
                   <Target className="w-5 h-5 text-blue-300" />
                 </div>
                 <div>
-                  <div className="font-display font-semibold text-2xl md:text-3xl gradient-brand">{displayScore}</div>
+                  <div className="font-mono font-semibold text-2xl md:text-3xl gradient-brand">{displayScore}</div>
                   <div className="tracking-ui text-[10px] uppercase tracking-wider text-white/30">Soul Score</div>
                 </div>
               </motion.div>
@@ -1340,7 +1365,7 @@ export default function PageClient() {
                   <Crown className="w-5 h-5" style={{ color: gradeColor }} />
                 </div>
                 <div>
-                  <div className="font-display font-semibold text-2xl md:text-3xl" style={{ color: gradeColor }}>
+                  <div className="font-mono font-semibold text-2xl md:text-3xl" style={{ color: gradeColor }}>
                     Grade {displayGrade}
                   </div>
                   <div className="tracking-ui text-[10px] uppercase tracking-wider text-white/30">{gradeLabel}</div>
@@ -1351,7 +1376,7 @@ export default function PageClient() {
                   <TrendingUp className="w-5 h-5 text-cyan-300" />
                 </div>
                 <div>
-                  <div className="font-display font-semibold text-2xl md:text-3xl gradient-cyan-pink">{connectedCount}</div>
+                  <div className="font-mono font-semibold text-2xl md:text-3xl gradient-cyan-pink">{connectedCount}</div>
                   <div className="tracking-ui text-[10px] uppercase tracking-wider text-white/30">Connected</div>
                 </div>
               </motion.div>
@@ -1401,6 +1426,47 @@ export default function PageClient() {
               {/* glow under window */}
               <div className="absolute -inset-x-10 -bottom-10 h-24 bg-gradient-to-r from-blue-600/20 via-cyan-600/20 to-blue-500/20 blur-3xl -z-10" />
             </motion.div>
+          </motion.section>
+
+          {/* ── Intro — What is Nodea (project introduction) ── */}
+          <motion.section
+            id="intro"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.6 }}
+            className="relative mt-20 md:mt-28 scroll-mt-24"
+          >
+            <div className="max-w-3xl mx-auto text-center">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.07] bg-white/[0.02] text-[11px] uppercase tracking-widest text-white/40 mb-5">
+                <AppLogo size={14} /> The Project
+              </div>
+              <h2 className="font-display-hero text-3xl md:text-5xl font-semibold tracking-tighter text-white">
+                What is <span className="gradient-brand">Nodea?</span>
+              </h2>
+              <p className="mt-5 text-white/50 text-base md:text-lg leading-relaxed">
+                Nodea is a Vana Cup 2026 project that turns your real digital footprint into
+                a single, portable identity card. Connect GitHub, Instagram, Spotify, YouTube,
+                Steam and ChatGPT — we read your actual activity with your permission, score it,
+                and build a card that represents who you really are online. No questionnaires,
+                no self-reported hype. <span className="text-white/80 font-medium">Every source. One point.</span>
+              </p>
+            </div>
+            <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[
+                { icon: Layers, title: "Multi-source", desc: "Six real platforms, one unified score built from live activity." },
+                { icon: Lock, title: "Private by design", desc: "You approve exactly what we read, and you can revoke anytime." },
+                { icon: Share2, title: "Portable", desc: "One card you can share, compare and keep across every device." },
+              ].map((f) => (
+                <div key={f.title} className="rounded-3xl border border-white/[0.07] bg-white/[0.02] p-6 text-center">
+                  <div className="inline-flex p-3 rounded-2xl bg-white/[0.04] border border-white/[0.07] mb-4">
+                    <f.icon className="w-6 h-6 text-cyan-300" />
+                  </div>
+                  <h3 className="font-display text-base font-semibold text-white mb-1.5">{f.title}</h3>
+                  <p className="text-sm text-white/45 leading-relaxed">{f.desc}</p>
+                </div>
+              ))}
+            </div>
           </motion.section>
 
           {/* ── Status / Error / Referral ── */}
@@ -2290,6 +2356,86 @@ export default function PageClient() {
           </div>
         </section>
 
+        {/* ── Article — Why data matters for AI ── */}
+        <section id="article" className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 mt-20 md:mt-28 scroll-mt-24">
+          <motion.article
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.6 }}
+            className="relative rounded-[2rem] border border-white/[0.07] bg-white/[0.02] p-6 md:p-10 overflow-hidden"
+          >
+            <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-blue-600/10 blur-[100px]" />
+            <div className="relative">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.07] bg-white/[0.02] text-[11px] uppercase tracking-widest text-white/40 mb-5">
+                <Brain className="w-3.5 h-3.5 text-cyan-300" /> Article
+              </div>
+              <h2 className="font-display-hero text-3xl md:text-4xl font-semibold tracking-tighter text-white leading-tight">
+                Why your data is the most important ingredient in AI
+              </h2>
+              <p className="mt-3 text-sm text-cyan-300/80 font-medium">
+                A short read on data, AI, and why ownership matters more than ever.
+              </p>
+
+              <div className="mt-6 space-y-5 text-white/55 leading-relaxed text-[15px]">
+                <p>
+                  Every AI model — from the chatbot you use daily to the agent that will soon
+                  book your travel — is only as smart as the data it learns from. The raw
+                  material of the AI revolution isn&apos;t compute or code; it&apos;s{" "}
+                  <strong className="text-white font-semibold">data</strong>. More precisely:{" "}
+                  <strong className="text-white font-semibold">your data</strong> — the trails
+                  you leave across GitHub, Spotify, Instagram, YouTube, Steam and ChatGPT every
+                  single day.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 my-6">
+                  {[
+                    { n: "90%", t: "of model quality is data quality, not architecture" },
+                    { n: "1B+", t: "tokens of human text separate one AI era from the next" },
+                    { n: "0", t: "questionnaires can replace real behavioral signals" },
+                  ].map((s) => (
+                    <div key={s.t} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
+                      <div className="font-mono text-2xl font-semibold gradient-brand">{s.n}</div>
+                      <p className="mt-1 text-xs text-white/40 leading-snug">{s.t}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <p>
+                  Here&apos;s the catch: the same data that powers AI is scattered, locked inside
+                  walled gardens, and — too often — used without the person who created it
+                  getting any say or value back. That&apos;s the gap Nodea is built for.
+                </p>
+
+                <blockquote className="border-l-2 border-cyan-400/60 pl-4 py-1 text-white/60 italic">
+                  &quot;The next generation of AI won&apos;t be won by whoever has the biggest model —
+                  it will be won by whoever has the best, most trustworthy data. And the best
+                  data about you is yours.&quot;
+                </blockquote>
+
+                <p>
+                  By connecting your real accounts, you&apos;re not just building a scorecard —
+                  you&apos;re claiming your slice of that future. Your activity becomes a verified,
+                  portable identity: one card that proves who you are across every platform,
+                  ready for the AI agents and applications that will ask for it tomorrow.
+                </p>
+              </div>
+
+              <div className="mt-8 flex flex-wrap items-center gap-4">
+                <button
+                  onClick={() => scrollToSection("connect")}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-shadow duration-300"
+                  style={{ background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)", boxShadow: "0 8px 30px -8px rgba(79,140,255,0.5)" }}
+                >
+                  Claim your data — connect a source
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+                <span className="text-xs text-white/35">~3 min read · Nodea Editorial</span>
+              </div>
+            </div>
+          </motion.article>
+        </section>
+
         {/* ── Final CTA (Framer-style) ── */}
         <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-20 md:mt-28 mb-20 md:mb-28">
           <motion.div
@@ -2580,6 +2726,39 @@ export default function PageClient() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* ── Bottom Nav (Patina-style tab bar) ── */}
+        <nav
+          className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/[0.08] bg-(--color-bg)/90 backdrop-blur-2xl"
+          aria-label="Primary"
+        >
+          <div className="mx-auto max-w-lg grid grid-cols-5">
+            {[
+              { id: "hero", label: "Home", icon: Home },
+              { id: "article", label: "Article", icon: Newspaper },
+              { id: "connect", label: "Connect", icon: Plus },
+              { id: "identity", label: "Card", icon: CreditCard },
+              { id: "standings", label: "Standings", icon: Trophy },
+            ].map((t) => {
+              const active =
+                t.id === "hero" ? activeTab === "hero" || activeTab === "intro" : activeTab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => scrollToSection(t.id)}
+                  className={`flex flex-col items-center justify-center gap-1 pt-2.5 pb-2 transition-colors ${
+                    active ? "text-cyan-400" : "text-white/45 hover:text-white/70"
+                  }`}
+                  aria-current={active ? "page" : undefined}
+                >
+                  <t.icon className="w-5 h-5" strokeWidth={active ? 2.2 : 1.8} />
+                  <span className="text-[10px] font-medium tracking-wide">{t.label}</span>
+                  <span className={`h-1 w-1 rounded-full transition-colors ${active ? "bg-cyan-400" : "bg-transparent"}`} />
+                </button>
+              );
+            })}
+          </div>
+        </nav>
       </div>
     </motion.div>
   );
