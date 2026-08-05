@@ -24,6 +24,7 @@ import {
 import { DataSoulCard } from "@/components/data-soul-card";
 import { BrandIconTile, BrandIcon, type BrandId } from "@/components/brand-icons";
 import { AppLogo, AppWordmark } from "@/components/app-logo";
+import { SourceOrbit } from "@/components/source-orbit";
 import {
   Plus,
   Check,
@@ -1336,6 +1337,16 @@ export default function PageClient() {
               <span className="inline-flex items-center gap-1.5"><Shield className="w-3.5 h-3.5" /> You approve what we read</span>
               <span className="inline-flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5" /> Revoke anytime</span>
             </motion.p>
+
+            {/* Source orbit — "Every source. One point." visual */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.5, duration: 0.9, ease: easeOut }}
+              className="mt-12 md:mt-14"
+            >
+              <SourceOrbit size={264} />
+            </motion.div>
 
             {/* Live Stats Bar */}
             <motion.div
