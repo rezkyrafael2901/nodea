@@ -60,6 +60,8 @@ import {
   Link2,
   Trophy,
   Star,
+  Sun,
+  Moon,
   TrendingUp,
   ArrowUpRight,
   BarChart2,
@@ -80,10 +82,10 @@ type ConnectState =
 
 const GRADE_COLORS: Record<string, string> = {
   S: "#fbbf24",
-  A: "#a78bfa",
-  B: "#38bdf8",
+  A: "#4F8CFF",
+  B: "#00D4FF",
   C: "#34d399",
-  D: "#71717a",
+  D: "#64748B",
 };
 
 const GRADE_LABELS: Record<string, string> = {
@@ -103,7 +105,7 @@ const THEME_OPTIONS = [
   {
     id: "neon",
     label: "Neon",
-    swatch: "bg-gradient-to-br from-[#0f0c29] via-[#24243e] to-[#a855f7]/60",
+    swatch: "bg-gradient-to-br from-[#0f0c29] via-[#24243e] to-[#4F8CFF]/60",
   },
   {
     id: "glass",
@@ -200,6 +202,19 @@ export default function PageClient() {
 
   const [refFrom, setRefFrom] = useState<string | null>(null);
   const [navOpen, setNavOpen] = useState(false);
+  // ── Theme (dark/light) ──
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    if (typeof window !== "undefined") {
+      const saved = window.localStorage.getItem("nodea-theme");
+      if (saved === "light" || saved === "dark") return saved;
+    }
+    return "dark";
+  });
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    try { window.localStorage.setItem("nodea-theme", theme); } catch {}
+  }, [theme]);
+
   const [scrolled, setScrolled] = useState(false);
 
   // scroll-shadow under the nav (Framer-style)
@@ -899,7 +914,7 @@ export default function PageClient() {
                   whileTap={reducedMotion ? {} : { scale: 0.95 }}
                   onClick={() => openLinkCheck(source, "full")}
                   disabled={connectState !== "idle" || generating}
-                  className="px-3 py-1.5 bg-violet-500/15 hover:bg-violet-500/25 border border-violet-500/30 hover:border-violet-500/50 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-xs font-medium text-violet-200 transition-colors"
+                  className="px-3 py-1.5 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 hover:border-blue-500/50 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-xs font-medium text-blue-200 transition-colors"
                   title="Watch history, likes, subscriptions — needs Vana Desktop"
                 >
                   Deep
@@ -952,7 +967,7 @@ export default function PageClient() {
             className="mt-3 text-[11px] text-white/35 leading-relaxed"
           >
             <span className="text-yellow-400/70 font-medium">Profile</span> works anywhere.{" "}
-            <span className="text-violet-300/70 font-medium">Deep</span> pulls watch history, likes &
+            <span className="text-blue-300/70 font-medium">Deep</span> pulls watch history, likes &
             subscriptions — connect it in Vana Desktop first for full data.
           </motion.div>
         )}
@@ -981,11 +996,11 @@ export default function PageClient() {
       breadth: Globe,
     };
     const componentColors = {
-      age: "from-violet-500 to-fuchsia-500",
+      age: "from-[#4F8CFF] to-[#00D4FF]",
       corroboration: "from-emerald-500 to-cyan-500",
       depth: "from-amber-500 to-orange-500",
       standing: "from-cyan-500 to-blue-500",
-      breadth: "from-fuchsia-500 to-pink-500",
+      breadth: "from-[#4F8CFF] to-[#00D4FF]",
     };
 
     return (
@@ -1042,7 +1057,7 @@ export default function PageClient() {
                   initial={{ width: 0 }}
                   animate={{ width: `${pct}%` }}
                   transition={{ delay: 0.2 + i * 0.06, duration: 0.8, ease: easeSpring }}
-                  className={`h-full rounded-full bg-gradient-to-r ${gradient} shadow-[0_0_10px_-2px_rgba(168,85,247,0.5)]`}
+                  className={`h-full rounded-full bg-gradient-to-r ${gradient} shadow-[0_0_10px_-2px_rgba(79,140,255,0.5)]`}
                 />
               </div>
             </motion.div>
@@ -1060,7 +1075,7 @@ export default function PageClient() {
       initial="initial"
       animate="animate"
       variants={pageVariants}
-      className="min-h-screen bg-[#060608] text-white relative overflow-x-hidden"
+      className="min-h-screen bg-[var(--color-bg)] text-white relative overflow-x-hidden"
     >
       {/* ── Animated Background ── */}
       <motion.div
@@ -1068,13 +1083,13 @@ export default function PageClient() {
         animate={glowVariants}
         style={{ willChange: "transform, opacity" }}
       >
-        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full bg-violet-600/8 blur-[150px]" />
-        <div className="absolute top-1/3 -left-60 w-[500px] h-[500px] rounded-full bg-fuchsia-600/5 blur-[120px]" />
+        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full bg-blue-600/8 blur-[150px]" />
+        <div className="absolute top-1/3 -left-60 w-[500px] h-[500px] rounded-full bg-cyan-600/5 blur-[120px]" />
         <div className="absolute bottom-0 right-0 w-[600px] h-[400px] rounded-full bg-cyan-600/5 blur-[150px]" />
         <div
           className="absolute top-0 left-0 w-full h-full"
           style={{
-            background: "radial-gradient(ellipse at 50% 0%, rgba(168,85,247,0.06) 0%, transparent 60%)",
+            background: "radial-gradient(ellipse at 50% 0%, rgba(79,140,255,0.08) 0%, transparent 60%)",
           }}
         />
       </motion.div>
@@ -1084,7 +1099,7 @@ export default function PageClient() {
         {[...Array(12)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute w-1 h-1 rounded-full bg-violet-500/30"
+            className="absolute w-1 h-1 rounded-full bg-blue-500/30"
             style={{
               left: `${5 + Math.random() * 90}%`,
               top: `${5 + Math.random() * 90}%`,
@@ -1107,7 +1122,7 @@ export default function PageClient() {
           transition={{ duration: 0.6, ease: easeOut }}
           className={`sticky top-0 z-50 transition-all duration-300 ${
             scrolled
-              ? "border-b border-white/[0.06] bg-[#060608]/85 backdrop-blur-2xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.6)]"
+              ? "border-b border-white/[0.06] bg-(--color-bg)/85 backdrop-blur-2xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.6)]"
               : "border-b border-transparent bg-transparent"
           }`}
         >
@@ -1151,13 +1166,22 @@ export default function PageClient() {
                   onClick={() => scrollToSection("connect")}
                   className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-shadow duration-300"
                   style={{
-                    background: "linear-gradient(135deg, #8b5cf6 0%, #d946ef 60%, #f472b6 100%)",
-                    boxShadow: "0 0 24px -6px rgba(168,85,247,0.55)",
+                    background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)",
+                    boxShadow: "0 0 24px -6px rgba(79,140,255,0.55)",
                   }}
                 >
                   Connect your data
                   <ArrowRight className="w-4 h-4" />
                 </motion.button>
+                {/* Theme toggle */}
+                <button
+                  onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
+                  className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white/80 hover:text-white hover:bg-white/[0.08] transition-colors"
+                  aria-label="Toggle light / dark theme"
+                  title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                >
+                  {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                </button>
                 {/* Mobile hamburger */}
                 <button
                   onClick={() => setNavOpen((v) => !v)}
@@ -1197,7 +1221,7 @@ export default function PageClient() {
                     <button
                       onClick={() => scrollToSection("connect")}
                       className="w-full mt-2 px-3 py-2.5 rounded-lg text-sm font-semibold text-white"
-                      style={{ background: "linear-gradient(135deg, #8b5cf6 0%, #d946ef 60%, #f472b6 100%)" }}
+                      style={{ background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)" }}
                     >
                       Connect your data
                     </button>
@@ -1265,8 +1289,8 @@ export default function PageClient() {
                 onClick={() => scrollToSection("connect")}
                 className="group inline-flex items-center gap-2.5 px-7 py-3.5 rounded-2xl text-base font-semibold text-white transition-shadow duration-300"
                 style={{
-                  background: "linear-gradient(135deg, #8b5cf6 0%, #d946ef 60%, #f472b6 100%)",
-                  boxShadow: "0 10px 40px -10px rgba(168,85,247,0.6)",
+                  background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)",
+                  boxShadow: "0 10px 40px -10px rgba(79,140,255,0.6)",
                 }}
               >
                 Connect your accounts
@@ -1303,8 +1327,8 @@ export default function PageClient() {
               className="mt-10 flex flex-wrap items-center justify-center gap-4 md:gap-8"
             >
               <motion.div variants={statVariants} className="flex items-center gap-3 px-5 py-3 rounded-2xl glass glass-border">
-                <div className="p-2 rounded-xl bg-violet-500/15">
-                  <Target className="w-5 h-5 text-violet-300" />
+                <div className="p-2 rounded-xl bg-blue-500/15">
+                  <Target className="w-5 h-5 text-blue-300" />
                 </div>
                 <div>
                   <div className="font-display font-semibold text-2xl md:text-3xl gradient-brand">{displayScore}</div>
@@ -1340,7 +1364,7 @@ export default function PageClient() {
               transition={{ delay: 0.6, duration: 0.8, ease: easeOut }}
               className="hidden lg:block mt-16 relative max-w-4xl mx-auto"
             >
-              <div className="rounded-2xl border border-white/[0.08] bg-[#0a0a0f]/90 backdrop-blur-xl overflow-hidden shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]">
+              <div className="rounded-2xl border border-white/[0.08] bg-(--color-bg-elevated)/90 backdrop-blur-xl overflow-hidden shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]">
                 {/* window chrome */}
                 <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06] bg-white/[0.02]">
                   <span className="w-3 h-3 rounded-full bg-red-500/70" />
@@ -1375,7 +1399,7 @@ export default function PageClient() {
                 </div>
               </div>
               {/* glow under window */}
-              <div className="absolute -inset-x-10 -bottom-10 h-24 bg-gradient-to-r from-violet-600/20 via-fuchsia-600/20 to-cyan-600/20 blur-3xl -z-10" />
+              <div className="absolute -inset-x-10 -bottom-10 h-24 bg-gradient-to-r from-blue-600/20 via-cyan-600/20 to-blue-500/20 blur-3xl -z-10" />
             </motion.div>
           </motion.section>
 
@@ -1393,12 +1417,12 @@ export default function PageClient() {
                     ? "bg-red-500/10 border-red-500/20 text-red-400"
                     : connectState === "done"
                     ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                    : "bg-violet-500/10 border-violet-500/20 text-violet-400"
+                    : "bg-blue-500/10 border-blue-500/20 text-blue-400"
                 }`}
               >
                 {connectState === "error" && <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />}
                 {connectState === "done" && <CheckCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />}
-                {connectState !== "error" && connectState !== "done" && <Loader2 className="w-5 h-5 mt-0.5 flex-shrink-0 animate-spin text-violet-400" />}
+                {connectState !== "error" && connectState !== "done" && <Loader2 className="w-5 h-5 mt-0.5 flex-shrink-0 animate-spin text-blue-400" />}
                 <span>{statusMessage}</span>
               </motion.div>
             )}
@@ -1445,9 +1469,9 @@ export default function PageClient() {
               <motion.div
                 initial={{ opacity: 0, y: -20, height: 0 }}
                 animate={{ opacity: 1, y: 0, height: "auto" }}
-                className="mb-8 p-4 bg-violet-500/10 border border-violet-500/20 rounded-2xl text-sm"
+                className="mb-8 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl text-sm"
               >
-                <div className="flex items-center gap-2 text-violet-300 font-medium mb-1">
+                <div className="flex items-center gap-2 text-blue-300 font-medium mb-1">
                   <Loader2 className="w-5 h-5 animate-spin" />
                   Waiting for approval…
                 </div>
@@ -1462,7 +1486,7 @@ export default function PageClient() {
               <motion.div
                 initial={{ opacity: 0, y: -20, height: 0 }}
                 animate={{ opacity: 1, y: 0, height: "auto" }}
-                className="mb-8 p-4 bg-violet-500/10 border border-violet-500/20 rounded-2xl text-violet-400 text-sm flex items-center gap-2"
+                className="mb-8 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl text-blue-400 text-sm flex items-center gap-2"
               >
                 <Loader2 className="w-5 h-5 animate-spin" />
                 <span>Generating your Nodea card…</span>
@@ -1509,7 +1533,7 @@ export default function PageClient() {
                 transition={{ duration: 0.5 }}
                 className="flex items-center gap-3 mb-8"
               >
-                <div className="font-display w-10 h-10 rounded-2xl bg-violet-500/15 border border-violet-500/20 flex items-center justify-center text-sm font-semibold text-violet-300">
+                <div className="font-display w-10 h-10 rounded-2xl bg-blue-500/15 border border-blue-500/20 flex items-center justify-center text-sm font-semibold text-blue-300">
                   1
                 </div>
                 <div>
@@ -1889,8 +1913,8 @@ export default function PageClient() {
                   disabled={generating || identities.length === 0 || connectState !== "idle"}
                   className="w-full py-5 rounded-2xl text-lg font-semibold tracking-tight flex items-center justify-center gap-3 transition-all duration-300 ease-out group disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:y-0"
                   style={{
-                    background: "linear-gradient(135deg, #a855f7 0%, #d946ef 50%, #f472b6 100%)",
-                    boxShadow: "0 0 40px -10px rgba(168,85,247,0.4)",
+                    background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)",
+                    boxShadow: "0 0 40px -10px rgba(79,140,255,0.4)",
                   }}
                 >
                   <motion.svg
@@ -1934,7 +1958,7 @@ export default function PageClient() {
                   className="mt-10 p-5 rounded-2xl glass glass-border"
                 >
                   <h3 className="text-sm font-semibold mb-4 text-white/70 flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-violet-400" />
+                    <Layers className="w-4 h-4 text-blue-400" />
                     Connected sources
                   </h3>
                   <motion.div
@@ -1970,7 +1994,7 @@ export default function PageClient() {
               className="lg:sticky lg:top-28 scroll-mt-24"
             >
               <div className="flex items-center gap-3 mb-6">
-                <div className="font-display w-10 h-10 rounded-2xl bg-fuchsia-500/15 border border-fuchsia-500/20 flex items-center justify-center text-sm font-semibold text-fuchsia-300">
+                <div className="font-display w-10 h-10 rounded-2xl bg-cyan-500/15 border border-cyan-500/20 flex items-center justify-center text-sm font-semibold text-cyan-300">
                   2
                 </div>
                 <div>
@@ -1988,8 +2012,8 @@ export default function PageClient() {
                   className="mb-6 p-5 rounded-2xl glass glass-border"
                 >
                   <div className="flex items-center gap-2 mb-4">
-                    <div className="p-2 rounded-xl bg-violet-500/15">
-                      <BarChart2 className="w-5 h-5 text-violet-300" />
+                    <div className="p-2 rounded-xl bg-blue-500/15">
+                      <BarChart2 className="w-5 h-5 text-blue-300" />
                     </div>
                     <div>
                       <div className="font-medium text-white">Score Breakdown</div>
@@ -2025,7 +2049,7 @@ export default function PageClient() {
                         <motion.span
                           animate={{ scale: [1, 1.05, 1] }}
                           transition={{ duration: 3, repeat: Infinity }}
-                          className="text-[10px] text-violet-400/70"
+                          className="text-[10px] text-blue-400/70"
                         >
                           Preview
                         </motion.span>
@@ -2039,7 +2063,7 @@ export default function PageClient() {
                             onClick={() => setCardTheme(t.id)}
                             className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all duration-300 ${
                               cardTheme === t.id
-                                ? "border-violet-400/50 bg-violet-500/10 shadow-[0_0_30px_-5px_rgba(168,85,247,0.3)]"
+                                ? "border-blue-400/50 bg-blue-500/10 shadow-[0_0_30px_-5px_rgba(79,140,255,0.3)]"
                                 : "border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]"
                             }`}
                           >
@@ -2050,7 +2074,7 @@ export default function PageClient() {
                             />
                             <motion.span
                               className={`text-[10px] font-medium ${
-                                cardTheme === t.id ? "text-violet-300" : "text-white/40"
+                                cardTheme === t.id ? "text-blue-300" : "text-white/40"
                               }`}
                             >
                               {t.label}
@@ -2096,7 +2120,7 @@ export default function PageClient() {
                                 t.rarity === "epic"
                                   ? "bg-amber-500/10 border-amber-500/30 text-amber-300 shadow-[0_0_20px_-5px_rgba(251,191,36,0.2)]"
                                   : t.rarity === "rare"
-                                  ? "bg-violet-500/10 border-violet-500/30 text-violet-300 shadow-[0_0_20px_-5px_rgba(168,85,247,0.2)]"
+                                  ? "bg-blue-500/10 border-blue-500/30 text-blue-300 shadow-[0_0_20px_-5px_rgba(79,140,255,0.2)]"
                                   : "bg-white/[0.03] border-white/10 text-white/50"
                               }`}
                               title={t.desc}
@@ -2108,7 +2132,7 @@ export default function PageClient() {
                                   className={`text-[8px] uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
                                     t.rarity === "epic"
                                       ? "bg-amber-500/20 text-amber-400"
-                                      : "bg-violet-500/20 text-violet-400"
+                                      : "bg-blue-500/20 text-blue-400"
                                   }`}
                                 >
                                   {t.rarity}
@@ -2132,10 +2156,10 @@ export default function PageClient() {
                         whileTap={reducedMotion ? {} : { scale: 0.98 }}
                         onClick={shareCard}
                         disabled={generating || connectState !== "idle"}
-                        className="flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-semibold text-[#060608] transition-all duration-300 group disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-semibold text-white transition-all duration-300 group disabled:opacity-40 disabled:cursor-not-allowed"
                         style={{
-                          background: "linear-gradient(135deg, #a855f7 0%, #d946ef 100%)",
-                          boxShadow: "0 0 30px -5px rgba(168,85,247,0.4)",
+                          background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)",
+                          boxShadow: "0 0 30px -5px rgba(79,140,255,0.4)",
                         }}
                       >
                         <Share2 className="w-4.5 h-4.5" />
@@ -2229,13 +2253,13 @@ export default function PageClient() {
                 icon: Lock,
                 title: "Private by design",
                 desc: "No wallet, no seed phrase, no password. You approve exactly what we read, and revoke anytime.",
-                accent: "from-violet-400/20 to-violet-400/0 text-violet-300",
+                accent: "from-blue-400/20 to-blue-400/0 text-blue-300",
               },
               {
                 icon: Zap,
                 title: "Instant score",
                 desc: "The moment you connect your first account your Soul Score appears. Add more sources to deepen it.",
-                accent: "from-fuchsia-400/20 to-fuchsia-400/0 text-fuchsia-300",
+                accent: "from-cyan-400/20 to-cyan-400/0 text-cyan-300",
               },
               {
                 icon: Share2,
@@ -2273,9 +2297,9 @@ export default function PageClient() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.6 }}
-            className="relative overflow-hidden rounded-[2rem] border border-white/[0.08] bg-gradient-to-b from-[#0d0b18] to-[#060608] px-6 py-16 md:py-24 text-center"
+            className="relative overflow-hidden rounded-[2rem] border border-white/[0.08] bg-gradient-to-b from-(--color-bg-elevated) to-(--color-bg) px-6 py-16 md:py-24 text-center"
           >
-            <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full bg-violet-600/15 blur-[120px]" />
+            <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full bg-blue-600/15 blur-[120px]" />
             <div className="absolute bottom-0 right-0 w-[300px] h-[200px] rounded-full bg-cyan-600/10 blur-[100px]" />
             <div className="relative">
               <motion.div
@@ -2298,8 +2322,8 @@ export default function PageClient() {
                 onClick={() => scrollToSection("connect")}
                 className="mt-9 inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl text-base font-semibold text-white transition-shadow duration-300"
                 style={{
-                  background: "linear-gradient(135deg, #8b5cf6 0%, #d946ef 60%, #f472b6 100%)",
-                  boxShadow: "0 12px 48px -12px rgba(168,85,247,0.7)",
+                  background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)",
+                  boxShadow: "0 12px 48px -12px rgba(79,140,255,0.7)",
                 }}
               >
                 Connect your accounts
@@ -2318,7 +2342,7 @@ export default function PageClient() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="border-t border-white/[0.05] bg-[#050507]"
+          className="border-t border-white/[0.05] bg-(--color-bg)"
         >
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14">
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-[1.5fr_1fr_1fr_1fr] gap-8">
@@ -2465,10 +2489,10 @@ export default function PageClient() {
                     </ol>
                     <button
                       onClick={proceedToVana}
-                      className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-[#060608] transition-all"
+                      className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-all"
                       style={{
-                        background: "linear-gradient(135deg, #a855f7 0%, #d946ef 100%)",
-                        boxShadow: "0 0 30px -5px rgba(168,85,247,0.4)",
+                        background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)",
+                        boxShadow: "0 0 30px -5px rgba(79,140,255,0.4)",
                       }}
                     >
                       <ExternalLink className="w-4 h-4" />
@@ -2498,7 +2522,7 @@ export default function PageClient() {
                           checkSource.handle?.placeholder ||
                           "Paste your profile link or handle"
                         }
-                        className="flex-1 rounded-xl bg-white/[0.05] border border-white/10 px-3.5 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-violet-400/50 focus:bg-white/[0.07] transition-colors"
+                        className="flex-1 rounded-xl bg-white/[0.05] border border-white/10 px-3.5 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-blue-400/50 focus:bg-white/[0.07] transition-colors"
                       />
                       <button
                         onClick={runLinkCheck}
@@ -2511,7 +2535,7 @@ export default function PageClient() {
                   </div>
                 ) : checkState === "checking" ? (
                   <div className="flex flex-col items-center justify-center py-8">
-                    <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+                    <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
                     <p className="text-sm text-white/50 mt-4">Checking your profile link…</p>
                   </div>
                 ) : (
@@ -2534,7 +2558,7 @@ export default function PageClient() {
                           checkSource.handle?.placeholder ||
                           "Paste your profile link or @handle"
                         }
-                        className="flex-1 rounded-xl bg-white/[0.05] border border-white/10 px-3.5 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-violet-400/50 focus:bg-white/[0.07] transition-colors"
+                        className="flex-1 rounded-xl bg-white/[0.05] border border-white/10 px-3.5 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-blue-400/50 focus:bg-white/[0.07] transition-colors"
                       />
                       <button
                         onClick={runLinkCheck}

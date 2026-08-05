@@ -9,7 +9,7 @@ interface SoulScoreCardProps {
 
 const GRADE_COLORS: Record<string, string> = {
   S: "from-amber-300 to-yellow-500 text-amber-300 border-amber-400/40",
-  A: "from-violet-400 to-fuchsia-500 text-violet-300 border-violet-400/40",
+  A: "from-[#4F8CFF] to-[#00D4FF] text-blue-300 border-blue-400/40",
   B: "from-sky-400 to-cyan-500 text-sky-300 border-sky-400/40",
   C: "from-emerald-400 to-teal-500 text-emerald-300 border-emerald-400/40",
   D: "from-white/60 to-white/30 text-white/60 border-white/20",
@@ -17,7 +17,7 @@ const GRADE_COLORS: Record<string, string> = {
 
 const COMPONENT_BAR: Record<string, string> = {
   age: "bg-gradient-to-r from-amber-400 to-orange-500",
-  depth: "bg-gradient-to-r from-violet-400 to-fuchsia-500",
+  depth: "bg-gradient-to-r from-[#4F8CFF] to-[#00D4FF]",
   breadth: "bg-gradient-to-r from-sky-400 to-cyan-500",
   standing: "bg-gradient-to-r from-emerald-400 to-teal-500",
 };
@@ -28,7 +28,7 @@ function Ring({ total, grade }: { total: number; grade: string }) {
   const pct = Math.min(total, 100) / 100;
   const color =
     grade === "S" ? "#fbbf24" :
-    grade === "A" ? "#a78bfa" :
+    grade === "A" ? "#4F8CFF" :
     grade === "B" ? "#38bdf8" :
     grade === "C" ? "#34d399" : "#525252";
 

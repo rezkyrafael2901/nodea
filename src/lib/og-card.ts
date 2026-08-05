@@ -49,14 +49,14 @@ const THEMES: Record<string, { label: string; defs: string; card: string; bgA: s
     bgB: "#24243e",
     defs: `
       <radialGradient id="glow1" cx="0%" cy="0%" r="80%">
-        <stop offset="0%" stop-color="rgba(168,85,247,0.55)" />
-        <stop offset="100%" stop-color="rgba(168,85,247,0)" />
+        <stop offset="0%" stop-color="rgba(79,140,255,0.55)" />
+        <stop offset="100%" stop-color="rgba(79,140,255,0)" />
       </radialGradient>
       <radialGradient id="glow2" cx="100%" cy="100%" r="80%">
         <stop offset="0%" stop-color="rgba(236,72,153,0.5)" />
         <stop offset="100%" stop-color="rgba(236,72,153,0)" />
       </radialGradient>`,
-    card: `fill="url(#card)" stroke="rgba(168,85,247,0.6)"`,
+    card: `fill="url(#card)" stroke="rgba(79,140,255,0.6)"`,
   },
   glass: {
     label: "Glass",
@@ -120,7 +120,7 @@ export function buildSoulCardSvg(p: OgCardParams): string {
 
   const gradeColor =
     grade === "S" ? "#fbbf24" :
-    grade === "A" ? "#a78bfa" :
+    grade === "A" ? "#4F8CFF" :
     grade === "B" ? "#38bdf8" :
     grade === "C" ? "#34d399" : "#a3a3a3";
 

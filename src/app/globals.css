@@ -37,35 +37,35 @@
 }
 
 @theme {
-  /* ── Colors ── */
-  --color-bg: #060608;
-  --color-bg-elevated: #0c0c10;
-  --color-bg-card: #0e0e12;
-  --color-bg-card-hover: #121218;
-  --color-border: #1e1e26;
-  --color-border-strong: #2a2a36;
+  /* ── Colors — Nodea palette: Electric Blue #4F8CFF · Cyan #00D4FF · Dark #0F172A ── */
+  --color-bg: #0F172A;
+  --color-bg-elevated: #16213B;
+  --color-bg-card: #1A2742;
+  --color-bg-card-hover: #20304F;
+  --color-border: #24334F;
+  --color-border-strong: #32445F;
   
-  --color-fg: #fafafa;
-  --color-fg-muted: #888894;
-  --color-fg-subtle: #5a5a68;
+  --color-fg: #ffffff;
+  --color-fg-muted: #94A3B8;
+  --color-fg-subtle: #64748B;
   
-  --color-brand: #a855f7;
-  --color-brand-strong: #d946ef;
-  --color-brand-glow: rgba(168, 85, 247, 0.4);
-  --color-brand-glow-strong: rgba(217, 70, 239, 0.6);
+  --color-brand: #4F8CFF;
+  --color-brand-strong: #00D4FF;
+  --color-brand-glow: rgba(79, 140, 255, 0.4);
+  --color-brand-glow-strong: rgba(0, 212, 255, 0.55);
   
-  --color-accent-cyan: #06b6d4;
-  --color-accent-pink: #f472b6;
+  --color-accent-cyan: #00D4FF;
+  --color-accent-blue: #4F8CFF;
   --color-accent-emerald: #34d399;
   --color-accent-amber: #fbbf24;
   --color-accent-orange: #fb923c;
   --color-accent-red: #f87171;
   
   --color-grade-s: #fbbf24;
-  --color-grade-a: #a78bfa;
-  --color-grade-b: #38bdf8;
+  --color-grade-a: #4F8CFF;
+  --color-grade-b: #00D4FF;
   --color-grade-c: #34d399;
-  --color-grade-d: #71717a;
+  --color-grade-d: #64748B;
   
   /* ── Spacing Scale (4px base) ── */
   --space-0: 0;
@@ -311,14 +311,22 @@
 }
 
 .gradient-cyan-pink {
-  background: linear-gradient(135deg, var(--color-accent-cyan) 0%, var(--color-accent-pink) 100%);
+  background: linear-gradient(135deg, #00D4FF 0%, #4F8CFF 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .gradient-white {
-  background: linear-gradient(180deg, #ffffff 0%, #a1a1aa 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #94A3B8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Light theme variant: dark ink gradient on light backgrounds */
+[data-theme="light"] .gradient-white {
+  background: linear-gradient(180deg, #0F172A 0%, #475569 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -354,7 +362,7 @@
   padding: 0.75rem 1.5rem;
   font-size: 1rem;
   background: linear-gradient(135deg, var(--color-brand) 0%, var(--color-brand-strong) 100%);
-  color: var(--color-bg);
+  color: #ffffff;
   box-shadow: var(--shadow-glow);
 }
 
@@ -405,7 +413,7 @@
 
 .btn-outline:hover:not(:disabled) {
   border-color: var(--color-brand);
-  background: rgba(168, 85, 247, 0.1);
+  background: rgba(79, 140, 255, 0.1);
 }
 
 .btn-danger {
@@ -430,7 +438,7 @@
 
 .input:focus {
   border-color: var(--color-brand);
-  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
+  box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.15);
   outline: none;
 }
 
@@ -472,9 +480,9 @@
 
 .badge-brand {
   composes: badge;
-  background: rgba(168, 85, 247, 0.1);
-  border: 1px solid rgba(168, 85, 247, 0.3);
-  color: #a855f7;
+  background: rgba(79, 140, 255, 0.1);
+  border: 1px solid rgba(79, 140, 255, 0.3);
+  color: #4F8CFF;
 }
 
 .badge-error {
@@ -611,7 +619,7 @@
   position: absolute;
   inset: -2px;
   border-radius: inherit;
-  background: linear-gradient(135deg, var(--color-brand), var(--color-accent-pink));
+  background: linear-gradient(135deg, var(--color-brand), var(--color-accent-cyan));
   opacity: 0;
   filter: blur(8px);
   transition: opacity var(--duration-normal) var(--ease-out);
@@ -634,7 +642,7 @@
   position: absolute;
   inset: -1px;
   border-radius: calc(var(--radius-xl) + 1px);
-  background: linear-gradient(135deg, var(--color-brand), var(--color-accent-pink), var(--color-accent-cyan));
+  background: linear-gradient(135deg, var(--color-brand), var(--color-accent-cyan));
   opacity: 0;
   transition: opacity var(--duration-normal) var(--ease-out);
   z-index: -1;
@@ -646,7 +654,7 @@
 
 /* ── Text Gradient Animated ── */
 .text-gradient-animated {
-  background: linear-gradient(135deg, var(--color-brand), var(--color-accent-pink), var(--color-accent-cyan), var(--color-brand));
+  background: linear-gradient(135deg, var(--color-brand), var(--color-accent-cyan), var(--color-brand));
   background-size: 300% 300%;
   -webkit-background-clip: text;
   background-clip: text;
@@ -678,3 +686,75 @@
 .grid-auto-fill {
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 }
+/* ═══════════════════════════════════════════════════════════════
+   LIGHT THEME — Nodea 2-mode display
+   [data-theme="light"] is set on <html> by the theme toggle.
+   Palette flips from Dark #0F172A → Light #F8FAFC while keeping
+   Electric Blue #4F8CFF + Cyan #00D4FF as the brand accents.
+   ═══════════════════════════════════════════════════════════════ */
+[data-theme="light"] {
+  color-scheme: light;
+  --color-bg: #F8FAFC;
+  --color-bg-elevated: #FFFFFF;
+  --color-bg-card: #FFFFFF;
+  --color-bg-card-hover: #F1F5F9;
+  --color-border: #E2E8F0;
+  --color-border-strong: #CBD5E1;
+  --color-fg: #0F172A;
+  --color-fg-muted: #475569;
+  --color-fg-subtle: #94A3B8;
+  --color-brand-glow: rgba(79, 140, 255, 0.25);
+  --color-brand-glow-strong: rgba(0, 212, 255, 0.35);
+  --shadow-glow: 0 0 40px -10px var(--color-brand-glow);
+  --shadow-glow-strong: 0 0 60px -10px var(--color-brand-glow-strong);
+}
+
+/* glass cards → white glass */
+[data-theme="light"] .glass {
+  background: linear-gradient(145deg, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.72) 100%);
+  border-color: #E2E8F0;
+}
+[data-theme="light"] .glass-strong {
+  background: linear-gradient(145deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.9) 100%);
+  border-color: #CBD5E1;
+}
+[data-theme="light"] .glass-border { border-color: #E2E8F0; }
+[data-theme="light"] .glass-border-hover:hover { border-color: #CBD5E1; }
+
+/* subtle shadow reduction on light */
+[data-theme="light"] .card-hover:hover {
+  box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.05);
+}
+
+/* shimmer / skeleton → soft gray */
+[data-theme="light"] .animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(15,23,42,0.06), transparent);
+  background-size: 200% 100%;
+}
+
+/* white-on-dark utilities → ink-on-light */
+[data-theme="light"] .bg-white\/10 { background-color: rgba(15, 23, 42,10.0) !important; }
+[data-theme="light"] .bg-white\/30 { background-color: rgba(15, 23, 42,30.0) !important; }
+[data-theme="light"] .bg-white\/5 { background-color: rgba(15, 23, 42,5.0) !important; }
+[data-theme="light"] .border-white { border-color: #E2E8F0 !important; }
+[data-theme="light"] .border-white\/10 { border-color: rgba(15, 23, 42,10.0) !important; }
+[data-theme="light"] .border-white\/15 { border-color: rgba(15, 23, 42,15.0) !important; }
+[data-theme="light"] .border-white\/20 { border-color: rgba(15, 23, 42,20.0) !important; }
+[data-theme="light"] .border-white\/25 { border-color: rgba(15, 23, 42,25.0) !important; }
+[data-theme="light"] .from-white { --tw-gradient-from: #FFFFFF; --tw-gradient-to: #FFFFFF; }
+[data-theme="light"] .placeholder-white\/30 { color: rgba(15, 23, 42,30.0) !important; }
+[data-theme="light"] .text-white { color: #0F172A !important; }
+[data-theme="light"] .text-white\/20 { color: rgba(15, 23, 42,20.0) !important; }
+[data-theme="light"] .text-white\/25 { color: rgba(15, 23, 42,25.0) !important; }
+[data-theme="light"] .text-white\/30 { color: rgba(15, 23, 42,30.0) !important; }
+[data-theme="light"] .text-white\/35 { color: rgba(15, 23, 42,35.0) !important; }
+[data-theme="light"] .text-white\/40 { color: rgba(15, 23, 42,40.0) !important; }
+[data-theme="light"] .text-white\/45 { color: rgba(15, 23, 42,45.0) !important; }
+[data-theme="light"] .text-white\/50 { color: rgba(15, 23, 42,50.0) !important; }
+[data-theme="light"] .text-white\/55 { color: rgba(15, 23, 42,55.0) !important; }
+[data-theme="light"] .text-white\/60 { color: rgba(15, 23, 42,60.0) !important; }
+[data-theme="light"] .text-white\/70 { color: rgba(15, 23, 42,70.0) !important; }
+[data-theme="light"] .text-white\/80 { color: rgba(15, 23, 42,80.0) !important; }
+[data-theme="light"] .text-white\/85 { color: rgba(15, 23, 42,85.0) !important; }
+[data-theme="light"] .text-white\/90 { color: rgba(15, 23, 42,90.0) !important; }
+[data-theme="light"] .to-white { --tw-gradient-from: #FFFFFF; --tw-gradient-to: #FFFFFF; }

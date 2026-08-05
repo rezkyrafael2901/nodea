@@ -47,9 +47,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="dark">
+      <head>
+        {/* Anti-flash: apply saved theme before first paint */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("nodea-theme");if(t==="light")document.documentElement.setAttribute("data-theme","light");else document.documentElement.setAttribute("data-theme","dark");}catch(e){document.documentElement.setAttribute("data-theme","dark");}})();`,
+          }}
+        />
+      </head>
       <body
-        className={`${inter.variable} ${interTight.variable} ${notoSans.variable} antialiased bg-[#0a0a0a] text-white min-h-screen`}
+        className={`${inter.variable} ${interTight.variable} ${notoSans.variable} antialiased min-h-screen`}
       >
         {children}
       </body>

@@ -9,7 +9,7 @@ export function DataSoulCard({ data }: { data: SoulCardData }) {
   const palette = (d.dominant_colors as string[]) || getPalette((d.mood as string) || "default");
   const scores = (d.personality_scores as Record<string, number>) || {};
 
-  const barColor = palette[0] || "#8b5cf6";
+  const barColor = palette[0] || "#4F8CFF";
   const barColor2 = palette[1] || "#ec4899";
 
   return (
@@ -127,7 +127,7 @@ export function DataSoulCard({ data }: { data: SoulCardData }) {
 
       {/* Actions */}
       <div className="flex gap-3 mt-4">
-        <button className="flex-1 py-2.5 bg-violet-600/20 border border-violet-500/30 hover:bg-violet-600/30 rounded-lg text-sm font-medium transition-colors">
+        <button className="flex-1 py-2.5 bg-blue-600/20 border border-blue-500/30 hover:bg-blue-600/30 rounded-lg text-sm font-medium transition-colors">
           <span className="inline-flex items-center justify-center gap-2">
             <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4" aria-hidden="true">
               <path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z" />
