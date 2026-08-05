@@ -23,11 +23,11 @@ type OrbitSource = {
 };
 
 const ORBIT_SOURCES: OrbitSource[] = [
-  { id: "github", radius: 0.46, size: 40, duration: 16, startAngle: 0 },
-  { id: "spotify", radius: 0.36, size: 34, duration: 12, startAngle: 72 },
-  { id: "instagram", radius: 0.5, size: 32, duration: 20, startAngle: 144, counter: true },
-  { id: "youtube", radius: 0.4, size: 32, duration: 14, startAngle: 216 },
-  { id: "chatgpt", radius: 0.31, size: 30, duration: 11, startAngle: 288, counter: true },
+  { id: "github", radius: 0.4, size: 40, duration: 16, startAngle: 0 },
+  { id: "spotify", radius: 0.3, size: 34, duration: 12, startAngle: 72 },
+  { id: "instagram", radius: 0.43, size: 32, duration: 20, startAngle: 144, counter: true },
+  { id: "youtube", radius: 0.35, size: 32, duration: 14, startAngle: 216 },
+  { id: "chatgpt", radius: 0.27, size: 30, duration: 11, startAngle: 288, counter: true },
 ];
 
 export function SourceOrbit({ size = 264 }: { size?: number }) {
@@ -111,8 +111,8 @@ export function SourceOrbit({ size = 264 }: { size?: number }) {
                 width: s.size,
                 height: s.size,
                 left: size / 2 - s.size / 2,
-                top: -s.size / 2,
-                transform: `translateY(${s.radius * size}px)`,
+                top: size / 2 - s.size / 2,
+                transform: `translateY(${-s.radius * size}px)`,
               }}
             >
               <div
