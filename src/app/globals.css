@@ -207,6 +207,7 @@
     line-height: 1.6;
     letter-spacing: var(--tracking-ui);
     min-height: 100vh;
+    min-height: 100dvh;
     overflow-x: hidden;
   }
 

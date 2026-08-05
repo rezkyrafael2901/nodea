@@ -76,7 +76,7 @@ function ReturnContent() {
   }, [searchParams, router]);
 
   return (
-    <main className="min-h-screen bg-[var(--color-bg)] text-white flex items-center justify-center">
+    <main className="min-h-dvh bg-[var(--color-bg)] text-white flex items-center justify-center">
       <div className="text-center max-w-md mx-auto p-8">
         {status === "processing" && (
           <>
@@ -113,7 +113,7 @@ export default function ReturnPage() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-screen bg-[var(--color-bg)] text-white flex items-center justify-center">
+        <main className="min-h-dvh bg-[var(--color-bg)] text-white flex items-center justify-center">
           <div className="text-center">
             <div className="text-5xl mb-6 animate-pulse">⏳</div>
             <p className="text-white/60">Processing connection...</p>

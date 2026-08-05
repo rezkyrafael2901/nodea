@@ -1088,7 +1088,8 @@ export default function PageClient() {
       initial="initial"
       animate="animate"
       variants={pageVariants}
-      className="min-h-screen bg-[var(--color-bg)] text-white relative overflow-x-hidden pb-24"
+      className="min-h-dvh bg-[var(--color-bg)] text-white relative overflow-x-hidden"
+      style={{ paddingBottom: "calc(6rem + env(safe-area-inset-bottom))" }}
     >
       {/* ── Animated Background ── */}
       <motion.div
@@ -1142,7 +1143,7 @@ export default function PageClient() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16 md:h-[72px]">
               {/* Logo */}
-              <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="flex items-center gap-2.5 shrink-0">
+              <button onClick={() => goView("home")} className="flex items-center gap-2.5 shrink-0" aria-label="Nodea home">
                 <AppLogo size={34} />
                 <span className="font-display text-lg font-semibold tracking-tight text-white">Nodea</span>
               </button>
@@ -2755,6 +2756,7 @@ export default function PageClient() {
         {/* ── Bottom Nav (Patina-style tab bar) ── */}
         <nav
           className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/[0.08] bg-(--color-bg)/90 backdrop-blur-2xl"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           aria-label="Primary"
         >
           <div className="mx-auto max-w-lg grid grid-cols-5">
