@@ -3,7 +3,7 @@ import { BrandIcon, type BrandId } from "@/components/brand-icons";
 import { AppLogo } from "@/components/app-logo";
 
 /**
- * Nodea — "Every Source. One You."
+ * Nodea — "Every Source Tells Your Story."
  * Visualizes the idea that all your data sources
  * orbit a single, unified identity: you.
  */

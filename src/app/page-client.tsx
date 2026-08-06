@@ -1280,9 +1280,9 @@ export default function PageClient() {
               transition={{ delay: 0.2, duration: 0.7, ease: easeOut }}
               className="font-display-hero text-5xl md:text-7xl lg:text-[5.2rem] font-semibold tracking-tighter leading-[1.02] mb-6"
             >
-              <span className="gradient-white">Every source.</span>
+              <span className="gradient-white">Every source</span>
               <br />
-              <span className="gradient-brand">One You.</span>
+              <span className="gradient-brand">tells your story.</span>
             </motion.h1>
 
             <motion.p
@@ -1338,7 +1338,7 @@ export default function PageClient() {
               <span className="inline-flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5" /> Revoke anytime</span>
             </motion.p>
 
-            {/* Source orbit — "Every source. One You." visual */}
+            {/* Source orbit — "Every Source Tells Your Story" visual */}
             <motion.div
               initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -1453,7 +1453,7 @@ export default function PageClient() {
                 a single, portable identity card. Connect GitHub, Instagram, Spotify, YouTube,
                 Steam and ChatGPT — we read your actual activity with your permission, score it,
                 and build a card that represents who you really are online. No questionnaires,
-                no self-reported hype. <span className="text-white/80 font-medium">Every source. One You.</span>
+                no self-reported hype. <span className="text-white/80 font-medium">Every Source Tells Your Story.</span>
               </p>
             </div>
             <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -2533,7 +2533,7 @@ export default function PageClient() {
                   <span className="font-display text-lg font-semibold tracking-tight text-white">Nodea</span>
                 </button>
                 <p className="text-sm text-white/35 max-w-xs leading-relaxed">
-                  Every source. One point. Your digital identity, built from real activity — not a questionnaire.
+                  Every Source Tells Your Story. Your digital identity, built from real activity — not a questionnaire.
                 </p>
                 <div className="flex items-center gap-2 mt-5">
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-400">
