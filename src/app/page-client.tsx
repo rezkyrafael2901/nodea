@@ -1271,7 +1271,7 @@ export default function PageClient() {
                 transition={{ duration: 1.5, repeat: Infinity }}
                 className="w-2 h-2 rounded-full bg-emerald-400"
               />
-              <span>Live on Vana · Vana Cup 2026</span>
+              <span>Live on Vana</span>
             </motion.div>
 
             <motion.h1
