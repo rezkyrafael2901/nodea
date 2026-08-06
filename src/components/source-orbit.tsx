@@ -24,10 +24,11 @@ type OrbitSource = {
 
 const ORBIT_SOURCES: OrbitSource[] = [
   { id: "github", radius: 0.4, size: 40, duration: 16, startAngle: 0 },
-  { id: "spotify", radius: 0.3, size: 34, duration: 12, startAngle: 72 },
-  { id: "instagram", radius: 0.43, size: 32, duration: 20, startAngle: 144, counter: true },
-  { id: "youtube", radius: 0.35, size: 32, duration: 14, startAngle: 216 },
-  { id: "chatgpt", radius: 0.27, size: 30, duration: 11, startAngle: 288, counter: true },
+  { id: "spotify", radius: 0.3, size: 34, duration: 12, startAngle: 60 },
+  { id: "instagram", radius: 0.43, size: 32, duration: 20, startAngle: 120, counter: true },
+  { id: "youtube", radius: 0.35, size: 32, duration: 14, startAngle: 180 },
+  { id: "chatgpt", radius: 0.27, size: 30, duration: 11, startAngle: 240, counter: true },
+  { id: "steam", radius: 0.37, size: 32, duration: 17, startAngle: 300 },
 ];
 
 export function SourceOrbit({ size = 264 }: { size?: number }) {
