@@ -3,7 +3,7 @@ import { BrandIcon, type BrandId } from "@/components/brand-icons";
 import { AppLogo } from "@/components/app-logo";
 
 /**
- * Nodea — "Connect. Verify. Own."
+ * Nodea — "Your Data. Your Proof."
  * Visualizes the idea that all your data sources
  * orbit a single, unified identity: you.
  */
