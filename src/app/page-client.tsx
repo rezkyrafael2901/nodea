@@ -1146,7 +1146,7 @@ export default function PageClient() {
               {/* Logo */}
               <button onClick={() => goView("home")} className="flex items-center gap-2.5 shrink-0 min-h-[44px]" aria-label="Nodea home">
                 <AppLogo size={34} />
-                <span className="font-display text-lg font-semibold tracking-tight text-white">Nodea</span>
+                <span className="font-display text-lg font-semibold tracking-tight text-white">NODEA</span>
               </button>
 
               {/* Center nav (desktop) */}
