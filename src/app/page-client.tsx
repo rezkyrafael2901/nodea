@@ -2594,7 +2594,7 @@ export default function PageClient() {
 
             <div className="mt-12 pt-8 border-t border-white/[0.04] flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-xs text-white/25">
-                © 2026 Nodea. Built for Vana Cup 2026.
+                © 2026 NODEA. Built for Vana Cup 2026.
               </div>
               <div className="text-xs text-white/25 text-center sm:text-right">
                 Data stays yours. Read with permission via Vana Data Portability.
