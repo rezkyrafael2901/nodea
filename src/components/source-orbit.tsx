@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { BrandIcon, type BrandId } from "@/components/brand-icons";
 import { AppLogo } from "@/components/app-logo";
 
@@ -27,14 +27,8 @@ const ORBIT_SOURCES: OrbitSource[] = [
 ];
 
 export function SourceOrbit({ size = 264 }: { size?: number }) {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduced(mq.matches);
-    const onChange = (e: MediaQueryListEvent) => setReduced(e.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
+  // Always animate — this is core brand identity, not accessibility-critical motion
+  const reduced = false;
 
   const core = size * 0.3;
   const ringSizes = [0.62, 0.46, 0.82];
