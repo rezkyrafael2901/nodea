@@ -124,7 +124,11 @@ export function SourceOrbit({ size = 264 }: { size?: number }) {
                   boxShadow: "0 6px 20px -8px rgba(0,0,0,0.7)",
                 }}
               >
-                <BrandIcon id={s.id} size={Math.round(s.size * 0.58)} />
+                <BrandIcon
+                id={s.id}
+                size={Math.round(s.size * 0.58)}
+                className={s.id === "github" ? "orbit-github-icon" : undefined}
+              />
               </div>
             </div>
           </div>

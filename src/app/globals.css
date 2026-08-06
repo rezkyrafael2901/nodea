@@ -768,6 +768,10 @@
 [data-theme="light"] .to-white { --tw-gradient-from: #FFFFFF; --tw-gradient-to: #FFFFFF; }
 /* GitHub brand tile — monochrome, must flip with theme */
 [data-theme="light"] .github-tile { background: rgba(15, 23, 42, 0.06) !important; border-color: rgba(15, 23, 42, 0.1) !important; }
+/* Orbit GitHub icon sits on an always-dark tile (inline rgba(15,23,42,0.92)),
+   so it must stay white in BOTH themes — the global text-white light flip
+   (#0F172A) would otherwise render a dark icon on a dark tile. */
+.orbit-github-icon { color: #FFFFFF !important; }
 
 /* ── SourceOrbit keyframes (pure CSS, compositor-driven) ── */
 @keyframes orbit-spin {
