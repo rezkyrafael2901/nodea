@@ -1449,7 +1449,7 @@ export default function PageClient() {
                 What is <span className="gradient-brand">Nodea?</span>
               </h2>
               <p className="mt-5 text-white/50 text-base md:text-lg leading-relaxed">
-                Nodea is a Vana Cup 2026 project that turns your real digital footprint into
+                Nodea is a project that turns your real digital footprint into
                 a single, portable identity card. Connect GitHub, Instagram, Spotify, YouTube,
                 Steam and ChatGPT — we read your actual activity with your permission, score it,
                 and build a card that represents who you really are online. No questionnaires,
