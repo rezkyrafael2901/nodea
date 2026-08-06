@@ -772,6 +772,10 @@
    so it must stay white in BOTH themes — the global text-white light flip
    (#0F172A) would otherwise render a dark icon on a dark tile. */
 .orbit-github-icon { color: #FFFFFF !important; }
+/* Orbit rings — theme-aware: white 7% on dark, navy 16% on light
+   (arbitrary border-white/[0.07] never matched the light flip selectors) */
+.orbit-ring { border-color: rgba(255, 255, 255, 0.07); }
+[data-theme="light"] .orbit-ring { border-color: rgba(15, 23, 42, 0.18); }
 
 /* ── SourceOrbit keyframes (pure CSS, compositor-driven) ── */
 @keyframes orbit-spin {

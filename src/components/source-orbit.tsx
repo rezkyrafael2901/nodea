@@ -64,7 +64,7 @@ export function SourceOrbit({ size = 264 }: { size?: number }) {
       {ringSizes.map((r, i) => (
         <div
           key={i}
-          className="absolute rounded-full border border-white/[0.07]"
+          className="absolute rounded-full border orbit-ring"
           style={{
             width: size * r,
             height: size * r,
@@ -144,8 +144,8 @@ export function SourceOrbit({ size = 264 }: { size?: number }) {
       >
         <defs>
           <linearGradient id="orbit-line" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#4F8CFF" stopOpacity="0.45" />
-            <stop offset="100%" stopColor="#00D4FF" stopOpacity="0.15" />
+            <stop offset="0%" stopColor="#4F8CFF" stopOpacity="0.65" />
+            <stop offset="100%" stopColor="#00D4FF" stopOpacity="0.35" />
           </linearGradient>
         </defs>
         {ORBIT_SOURCES.map((s) => {
