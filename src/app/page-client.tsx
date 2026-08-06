@@ -1282,7 +1282,7 @@ export default function PageClient() {
             >
               <span className="gradient-white">Every source.</span>
               <br />
-              <span className="gradient-brand">One point.</span>
+              <span className="gradient-brand">One You.</span>
             </motion.h1>
 
             <motion.p
@@ -1338,7 +1338,7 @@ export default function PageClient() {
               <span className="inline-flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5" /> Revoke anytime</span>
             </motion.p>
 
-            {/* Source orbit — "Every source. One point." visual */}
+            {/* Source orbit — "Every source. One You." visual */}
             <motion.div
               initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -1453,7 +1453,7 @@ export default function PageClient() {
                 a single, portable identity card. Connect GitHub, Instagram, Spotify, YouTube,
                 Steam and ChatGPT — we read your actual activity with your permission, score it,
                 and build a card that represents who you really are online. No questionnaires,
-                no self-reported hype. <span className="text-white/80 font-medium">Every source. One point.</span>
+                no self-reported hype. <span className="text-white/80 font-medium">Every source. One You.</span>
               </p>
             </div>
             <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4">

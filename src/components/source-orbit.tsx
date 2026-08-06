@@ -3,14 +3,9 @@ import { BrandIcon, type BrandId } from "@/components/brand-icons";
 import { AppLogo } from "@/components/app-logo";
 
 /**
- * SourceOrbit — hero animation for Nodea.
- * Visualizes "Every source. One point.": brand source icons orbit a
- * central Nodea node via a rotating arm (pure CSS keyframes, GPU
- * compositor — no JS animation loop), with dashed connecting lines and
- * a pulsing core. Respects prefers-reduced-motion and is client-only.
- *
- * CSS keyframes are defined in globals.css (orbit-spin / orbit-spin-rev
- * / orbit-pulse). Negative animation-delay sets the start angle.
+ * Nodea — "Every Source. One You."
+ * Visualizes the idea that all your data sources
+ * orbit a single, unified identity: you.
  */
 
 type OrbitSource = {
