@@ -70,7 +70,7 @@ export function SourceOrbit({ size = 264 }: { size?: number }) {
         </div>
       ))}
 
-      {/* Orbiting sources — each arm rotates via CSS; icon sits at radius */}
+      {/* Orbiting sources — wrapper handles static initial rotation, inner handles animation */}
       {ORBIT_SOURCES.map((s) => {
         const delay = -((s.startAngle / 360) * s.duration); // negative delay = start angle
         return (
@@ -83,34 +83,47 @@ export function SourceOrbit({ size = 264 }: { size?: number }) {
               left: 0,
               top: 0,
               transformOrigin: `${size / 2}px ${size / 2}px`,
+              // Static initial rotation — no animation here
               transform: `rotate(${s.startAngle}deg)`,
-              animation: `${s.counter ? "orbit-spin-rev" : "orbit-spin"} ${s.duration}s linear infinite`,
-              animationDelay: `${delay}s`,
             }}
           >
             <div
-              className="absolute flex items-center justify-center"
+              className="absolute"
               style={{
-                width: s.size,
-                height: s.size,
-                left: size / 2 - s.size / 2,
-                top: size / 2 - s.size / 2,
-                transform: `translateY(${-s.radius * size}px)`,
+                width: size,
+                height: size,
+                left: 0,
+                top: 0,
+                transformOrigin: `${size / 2}px ${size / 2}px`,
+                // Animation ONLY on this inner wrapper — no inline transform conflict
+                animation: `${s.counter ? "orbit-spin-rev" : "orbit-spin"} ${s.duration}s linear infinite`,
+                animationDelay: `${delay}s`,
               }}
             >
               <div
-                className="w-full h-full rounded-full flex items-center justify-center"
+                className="absolute flex items-center justify-center"
                 style={{
-                  background: "rgba(15,23,42,0.92)",
-                  border: "1px solid rgba(255,255,255,0.16)",
-                  boxShadow: "0 6px 20px -8px rgba(0,0,0,0.7)",
+                  width: s.size,
+                  height: s.size,
+                  left: size / 2 - s.size / 2,
+                  top: size / 2 - s.size / 2,
+                  transform: `translateY(${-s.radius * size}px)`,
                 }}
               >
-                <BrandIcon
-                  id={s.id}
-                  size={Math.round(s.size * 0.58)}
-                  className={s.id === "github" ? "orbit-github-icon" : undefined}
-                />
+                <div
+                  className="w-full h-full rounded-full flex items-center justify-center"
+                  style={{
+                    background: "rgba(15,23,42,0.92)",
+                    border: "1px solid rgba(255,255,255,0.16)",
+                    boxShadow: "0 6px 20px -8px rgba(0,0,0,0.7)",
+                  }}
+                >
+                  <BrandIcon
+                    id={s.id}
+                    size={Math.round(s.size * 0.58)}
+                    className={s.id === "github" ? "orbit-github-icon" : undefined}
+                  />
+                </div>
               </div>
             </div>
           </div>
