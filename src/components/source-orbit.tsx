@@ -27,9 +27,6 @@ const ORBIT_SOURCES: OrbitSource[] = [
 ];
 
 export function SourceOrbit({ size = 264 }: { size?: number }) {
-  // Always animate — this is core brand identity, not accessibility-critical motion
-  const reduced = false;
-
   const core = size * 0.3;
   const ringSizes = [0.62, 0.46, 0.82];
 
@@ -59,9 +56,7 @@ export function SourceOrbit({ size = 264 }: { size?: number }) {
             height: size * r,
             left: (size - size * r) / 2,
             top: (size - size * r) / 2,
-            animation: reduced
-              ? undefined
-              : `orbit-spin ${36 + i * 16}s linear infinite`,
+            animation: `orbit-spin ${36 + i * 16}s linear infinite`,
           }}
         >
           <div
@@ -89,9 +84,7 @@ export function SourceOrbit({ size = 264 }: { size?: number }) {
               top: 0,
               transformOrigin: `${size / 2}px ${size / 2}px`,
               transform: `rotate(${s.startAngle}deg)`,
-              animation: reduced
-                ? undefined
-                : `${s.counter ? "orbit-spin-rev" : "orbit-spin"} ${s.duration}s linear infinite`,
+              animation: `${s.counter ? "orbit-spin-rev" : "orbit-spin"} ${s.duration}s linear infinite`,
               animationDelay: `${delay}s`,
             }}
           >
@@ -114,10 +107,10 @@ export function SourceOrbit({ size = 264 }: { size?: number }) {
                 }}
               >
                 <BrandIcon
-                id={s.id}
-                size={Math.round(s.size * 0.58)}
-                className={s.id === "github" ? "orbit-github-icon" : undefined}
-              />
+                  id={s.id}
+                  size={Math.round(s.size * 0.58)}
+                  className={s.id === "github" ? "orbit-github-icon" : undefined}
+                />
               </div>
             </div>
           </div>
@@ -172,7 +165,7 @@ export function SourceOrbit({ size = 264 }: { size?: number }) {
             width: core,
             height: core,
             border: "1px solid rgba(0,212,255,0.4)",
-            animation: reduced ? undefined : "orbit-pulse 2s ease-out infinite",
+            animation: "orbit-pulse 2s ease-out infinite",
           }}
         />
         <div
@@ -182,7 +175,7 @@ export function SourceOrbit({ size = 264 }: { size?: number }) {
             height: core,
             background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)",
             boxShadow: "0 0 36px 3px rgba(79,140,255,0.55), 0 14px 34px -12px rgba(0,212,255,0.65)",
-            animation: reduced ? undefined : "orbit-breathe 2.4s ease-in-out infinite",
+            animation: "orbit-breathe 2.4s ease-in-out infinite",
           }}
         >
           <AppLogo size={core * 0.56} />
