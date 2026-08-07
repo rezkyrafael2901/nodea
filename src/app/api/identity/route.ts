@@ -1,17 +1,67 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { buildIdentityPrompt, getPalette, type IdentityData } from "@/lib/vana-sources";
 
-export async function POST(request: Request) {
+/**
+ * Simple in-memory rate limiter (per cold instance).
+ * Good enough to deter casual abuse; Vercel edge/upstash rate limit
+ * is the production-grade upgrade path.
+ */
+const WINDOW_MS = 60_000;
+const MAX_PER_WINDOW = 10;
+const hits = new Map<string, { count: number; resetAt: number }>();
+
+function rateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = hits.get(ip);
+  if (!entry || now > entry.resetAt) {
+    hits.set(ip, { count: 1, resetAt: now + WINDOW_MS });
+    return false;
+  }
+  entry.count += 1;
+  return entry.count > MAX_PER_WINDOW;
+}
+
+function clientIp(req: NextRequest): string {
+  const fwd = req.headers.get("x-forwarded-for");
+  if (fwd) return fwd.split(",")[0].trim();
+  return req.headers.get("x-real-ip") ?? "unknown";
+}
+
+function mockResponse(sources: IdentityData[]): NextResponse {
+  return NextResponse.json({ ...getMockAnalysis(sources), isMock: true });
+}
+
+export async function POST(request: NextRequest) {
   try {
+    if (rateLimited(clientIp(request))) {
+      return NextResponse.json(
+        { error: "Too many requests — please wait a moment and try again." },
+        { status: 429 }
+      );
+    }
+
     const { prompt, sources }: { prompt: string; sources: IdentityData[] } =
       await request.json();
+
+    if (!prompt || typeof prompt !== "string" || prompt.length > 12_000) {
+      return NextResponse.json(
+        { error: "Invalid or oversized prompt." },
+        { status: 400 }
+      );
+    }
+    if (!Array.isArray(sources) || sources.length > 12) {
+      return NextResponse.json(
+        { error: "Invalid sources payload." },
+        { status: 400 }
+      );
+    }
 
     // Use AI provider — OpenRouter (configurable via env)
     const apiKey = process.env.OPENROUTER_API_KEY || process.env.ANTHROPIC_API_KEY;
 
     if (!apiKey) {
       // FALLBACK: return mock analysis (for development/demo)
-      return NextResponse.json(getMockAnalysis(sources));
+      return mockResponse(sources);
     }
 
     const endpoint = process.env.OPENROUTER_API_KEY
@@ -38,21 +88,21 @@ export async function POST(request: Request) {
       });
 
       if (!response.ok) {
-        return NextResponse.json(getMockAnalysis(sources));
+        return mockResponse(sources);
       }
 
       const data = await response.json();
       const content = data.choices?.[0]?.message?.content || "";
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        return NextResponse.json(getMockAnalysis(sources));
+        return mockResponse(sources);
       }
 
       try {
         const result = JSON.parse(jsonMatch[0]);
-        return NextResponse.json(result);
+        return NextResponse.json({ ...result, isMock: false });
       } catch {
-        return NextResponse.json(getMockAnalysis(sources));
+        return mockResponse(sources);
       }
     }
 
@@ -74,26 +124,25 @@ export async function POST(request: Request) {
     });
 
     if (!response.ok) {
-      return NextResponse.json(getMockAnalysis(sources));
+      return mockResponse(sources);
     }
 
     const data = await response.json();
     const content = data.content?.[0]?.text || "";
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      return NextResponse.json(getMockAnalysis(sources));
+      return mockResponse(sources);
     }
 
     try {
       const result = JSON.parse(jsonMatch[0]);
-      return NextResponse.json(result);
+      return NextResponse.json({ ...result, isMock: false });
     } catch {
-      return NextResponse.json(getMockAnalysis(sources));
+      return mockResponse(sources);
     }
-
   } catch (error) {
     console.error("Identity API error:", error);
-    return NextResponse.json(getMockAnalysis([]));
+    return mockResponse([]);
   }
 }
 

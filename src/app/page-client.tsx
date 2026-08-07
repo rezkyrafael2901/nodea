@@ -2124,6 +2124,20 @@ export default function PageClient() {
                     transition={{ duration: 0.4, ease: easeOut }}
                     className="space-y-5"
                   >
+                    {/* Demo Mode badge — AI analysis is not configured */}
+                    {(identityResult as Record<string, any>).isMock ? (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl border border-amber-400/30 bg-amber-500/10 text-amber-300/90"
+                      >
+                        <span className="text-xs font-medium">⚠️ Demo Mode</span>
+                        <span className="text-[10px] text-amber-200/60">
+                          AI analysis belum dikonfigurasi — hasil ini contoh (template), bukan analisis data asli.
+                        </span>
+                      </motion.div>
+                    ) : null}
+
                     {/* Theme Picker */}
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}

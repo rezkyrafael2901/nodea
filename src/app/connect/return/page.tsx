@@ -33,7 +33,7 @@ function ReturnContent() {
       // Vana sometimes redirects without params — polling in the main tab
       // is the source of truth, so just send the opener a generic signal.
       if (window.opener && !window.opener.closed) {
-        window.opener.postMessage({ type: "vana-connect-returned" }, "*");
+        window.opener.postMessage({ type: "vana-connect-returned" }, window.location.origin);
       }
       setStatus("success");
       setMessage("Returning to your app…");
@@ -56,7 +56,7 @@ function ReturnContent() {
           sourceId,
           requestId,
         },
-        "*"
+        window.location.origin
       );
       setStatus("success");
       setMessage("Connection approved! This tab will close automatically.");
