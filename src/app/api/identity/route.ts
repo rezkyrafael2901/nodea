@@ -171,6 +171,9 @@ export async function POST(request: NextRequest) {
 
     // Build request
     const buildRequest = (): RequestInit => {
+      const systemPrompt =
+        "You are an AI that analyzes human digital identity across multiple social platforms. You must respond with ONLY valid JSON matching the exact schema requested. No markdown, no explanation.";
+
       if (useOpenRouter || useCustom) {
         return {
           method: "POST",
@@ -188,7 +191,10 @@ export async function POST(request: NextRequest) {
             model: useOpenRouter
               ? process.env.OPENROUTER_MODEL || "anthropic/claude-sonnet-4-20250514"
               : process.env.CUSTOM_LLM_MODEL || "gpt-4o-mini",
-            messages: [{ role: "user", content: prompt }],
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: prompt },
+            ],
             max_tokens: 2000,
             temperature: 0.7,
           }),
