@@ -67,7 +67,7 @@ export async function GET(request: Request) {
   const ref = (p.ref || "").substring(0, 30);
   const sources = (p.sources || "github,instagram").split(",").slice(0, 5);
   const coreIdentity = (p.identity || "A multi-disciplinary creator bridging technical depth with creative expression.").substring(0, 120);
-  const tagline = (p.tagline || "Builder with an artist's eye and a researcher's curiosity").substring(0, 60);
+  const tagline = (p.tagline || "Meet yourself in your data").substring(0, 60);
   const aesthetic = (p.aesthetic || "Digital Minimalist").substring(0, 40);
 
   const gradeColor =

@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Resolve API key
-    const apiKey = process.env.OPENROUTER_API_KEY || process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.OPENROUTER_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.CUSTOM_LLM_API_KEY;
     if (!apiKey) {
       if (mode === "llm-only") {
         return NextResponse.json(
@@ -153,33 +153,48 @@ export async function POST(request: NextRequest) {
       return mockResponse(sources, "no_api_key", mode);
     }
 
+    // Detect provider
     const useOpenRouter = Boolean(process.env.OPENROUTER_API_KEY);
+    const useAnthropic = Boolean(process.env.ANTHROPIC_API_KEY) && !useOpenRouter;
+    const useCustom = Boolean(process.env.CUSTOM_LLM_API_KEY) && !useOpenRouter && !useAnthropic;
+
     const endpoint = useOpenRouter
       ? "https://openrouter.ai/api/v1/chat/completions"
-      : "https://api.anthropic.com/v1/messages";
+      : useAnthropic
+      ? "https://api.anthropic.com/v1/messages"
+      : useCustom
+      ? `${process.env.CUSTOM_LLM_BASE_URL || "https://share.febfrmn.web.id/v1"}/chat/completions`
+      : "https://openrouter.ai/api/v1/chat/completions"; // fallback, shouldn't happen
 
     const TIMEOUT_MS = 25_000; // 25s — leave headroom for Vercel 30s limit
     const MAX_RETRIES = 1; // one retry on transient failure
 
     // Build request
     const buildRequest = (): RequestInit => {
-      if (useOpenRouter) {
+      if (useOpenRouter || useCustom) {
         return {
           method: "POST",
           headers: {
             Authorization: `Bearer ${apiKey}`,
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://nodea-app.vercel.app",
-            "X-Title": "Nodea",
+            ...(useOpenRouter
+              ? {
+                  "HTTP-Referer": "https://nodea-app.vercel.app",
+                  "X-Title": "Nodea",
+                }
+              : {}),
           },
           body: JSON.stringify({
-            model: process.env.OPENROUTER_MODEL || "anthropic/claude-sonnet-4-20250514",
+            model: useOpenRouter
+              ? process.env.OPENROUTER_MODEL || "anthropic/claude-sonnet-4-20250514"
+              : process.env.CUSTOM_LLM_MODEL || "gpt-4o-mini",
             messages: [{ role: "user", content: prompt }],
             max_tokens: 2000,
             temperature: 0.7,
           }),
         };
       }
+      // Anthropic
       return {
         method: "POST",
         headers: {
@@ -232,7 +247,7 @@ export async function POST(request: NextRequest) {
 
         // Extract content
         let content = "";
-        if (useOpenRouter) {
+        if (useOpenRouter || useCustom) {
           content = data.choices?.[0]?.message?.content || "";
         } else {
           content = data.content?.[0]?.text || "";
