@@ -11,14 +11,7 @@ import {
 } from "@/lib/vana-sources";
 import { computeSoulScore, type SoulScoreResult, type ScoreComponent } from "@/lib/soul-score";
 import { getTraits, getTopTrait, type Trait } from "@/lib/traits";
-import {
-  REWARD_CONFIG,
-  type LeaderboardEntry,
-  type NodeaIdentity,
-  loadIdentity,
-  makeIdentity,
-  saveIdentity,
-} from "@/lib/rewards";
+import { type LeaderboardEntry } from "@/lib/rewards";
 import { DataSoulCard } from "@/components/data-soul-card";
 import { BrandIconTile, BrandIcon, type BrandId } from "@/components/brand-icons";
 import { AppLogo, AppWordmark } from "@/components/app-logo";
@@ -42,7 +35,6 @@ import {
   Heart,
   Brain,
   Users,
-  UserPlus,
   Menu,
   Monitor,
   Globe,
@@ -244,29 +236,11 @@ export default function PageClient() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // ── Nodea Tag identity (Patina-style sign-in, zero external OAuth) ──
-  const [identity, setIdentity] = useState<NodeaIdentity | null>(null);
-  const [tagInput, setTagInput] = useState("");
-  const [tagState, setTagState] = useState<"idle" | "saving" | "done" | "error">("idle");
-  const [tagError, setTagError] = useState("");
-
   // ── Leaderboard (real Vana Cup standings) ──
   const [standings, setStandings] = useState<LeaderboardEntry[] | null>(null);
   const [poolInfo, setPoolInfo] = useState<{ pool: number; championPayout: number; runnerUp: number; places: number; cupClosesAt: string; paidBy: string } | null>(null);
   const [lbLoading, setLbLoading] = useState(true);
   const [lbError, setLbError] = useState("");
-
-  // Load identity once
-  useEffect(() => {
-    try {
-      let id = loadIdentity();
-      if (!id) {
-        id = makeIdentity();
-        saveIdentity(id);
-      }
-      setIdentity(id);
-    } catch {}
-  }, []);
 
   // Fetch real Vana Cup leaderboard once
   useEffect(() => {
@@ -294,42 +268,6 @@ export default function PageClient() {
       }
     })();
   }, []);
-
-  // Claim / change the Nodea Tag
-  const handleClaimTag = useCallback(async () => {
-    if (!identity) return;
-    const raw = tagInput.trim();
-    if (!raw) {
-      setTagError("Pick a tag first.");
-      setTagState("error");
-      return;
-    }
-    setTagState("saving");
-    setTagError("");
-    try {
-      const res = await fetch("/api/username", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ id: identity.id, username: raw }),
-      });
-      const data = await res.json();
-      if (!data.ok) {
-        setTagError(data.error ?? "Could not save that tag.");
-        setTagState("error");
-        return;
-      }
-      const updated: NodeaIdentity = {
-        ...identity,
-        username: data.username,
-      };
-      setIdentity(updated);
-      saveIdentity(updated);
-      setTagState("done");
-    } catch {
-      setTagError("Network error — try again.");
-      setTagState("error");
-    }
-  }, [identity, tagInput]);
 
   // ── Effects ──
   useEffect(() => {
@@ -1320,7 +1258,7 @@ export default function PageClient() {
               className="mt-6 text-xs md:text-sm text-white/35 flex flex-wrap items-center justify-center gap-x-5 gap-y-2"
             >
               <span className="inline-flex items-center gap-1.5"><Shield className="w-3.5 h-3.5" /> Self-custody via Vana Connect</span>
-              <span className="inline-flex items-center gap-1.5"><Shield className="w-3.5 h-3.5" /> You approve what we read</span>
+              <span className="inline-flex items-center gap-1.5"><Lock className="w-3.5 h-3.5" /> No wallet needed</span>
               <span className="inline-flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5" /> Revoke anytime</span>
             </motion.p>
 
@@ -1445,7 +1383,7 @@ export default function PageClient() {
             <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
                 { icon: Layers, title: "Multi-source", desc: "Six real platforms, one unified score built from live activity." },
-                { icon: Lock, title: "Private by design", desc: "Authorize granular access — read once, revoke anytime." },
+                { icon: Lock, title: "Private by design", desc: "You approve exactly what we read, and you can revoke anytime." },
                 { icon: Share2, title: "Portable", desc: "One card you can share, compare and keep across every device." },
               ].map((f) => (
                 <div key={f.title} className="rounded-3xl border border-white/[0.07] bg-white/[0.02] p-6 text-center">
@@ -1737,13 +1675,13 @@ export default function PageClient() {
                       num: "01",
                       icon: Link,
                       title: "Connect an account",
-                      desc: "Link a data source through Vana Connect. Approve granular permissions, and your score is generated instantly. Add more sources to deepen your profile.",
+                      desc: "No wallet, no download, no seed phrase. Start with the account you've had the longest, and your score appears straight away. Add more to raise it.",
                     },
                     {
                       num: "02",
                       icon: Shield,
                       title: "You approve what we read",
-                      desc: "Your data stays in your own personal data vault — never ours. Approve granular access, data is read once, and you keep full control to revoke anytime. Credentials are never exposed.",
+                      desc: "Your accounts stay in your own store, not ours. You approve exactly what we read, we read it once, and you can revoke access whenever you want. We never see a password.",
                     },
                     {
                       num: "03",
@@ -1798,62 +1736,6 @@ export default function PageClient() {
                         : "Vana Cup live standings"}
                     </p>
                   </div>
-                </div>
-
-                {/* Nodea Tag (sign-in equivalent) */}
-                <div className="p-5 rounded-2xl glass glass-border mb-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <UserPlus className="w-4 h-4 text-amber-300" />
-                    <div className="font-medium text-white text-sm">
-                      {identity?.username ? `You're on the board as @${identity.username}` : "Claim your Nodea Tag"}
-                    </div>
-                  </div>
-                  <p className="text-sm text-white/50 mb-3">
-                    {identity?.username
-                      ? `Your tag: ${identity.username}`
-                      : "A tag keeps your score across devices and puts you on the leaderboard."}
-                  </p>
-                  {identity?.username ? (
-                    <div className="text-xs text-white/40">
-                      Connected with {DATA_SOURCES.length} data sources — the more you connect, the fuller your Nodea card.
-                    </div>
-                  ) : (
-                    <div className="flex gap-2">
-                      <input
-                        value={tagInput}
-                        onChange={(e) => {
-                          setTagInput(e.target.value);
-                          if (tagState === "error") setTagState("idle");
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleClaimTag();
-                        }}
-                        placeholder="your tag — 3-24 chars"
-                        className="flex-1 min-w-0 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white placeholder:text-white/25 outline-none focus:border-amber-500/40 transition-colors"
-                        maxLength={24}
-                      />
-                      <motion.button
-                        whileHover={reducedMotion ? {} : { scale: 1.02 }}
-                        whileTap={reducedMotion ? {} : { scale: 0.97 }}
-                        onClick={handleClaimTag}
-                        disabled={tagState === "saving"}
-                        className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-200 text-sm font-medium transition-colors disabled:opacity-50"
-                      >
-                        {tagState === "saving" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                        {tagState === "saving" ? "Saving…" : "Claim"}
-                      </motion.button>
-                    </div>
-                  )}
-                  {tagState === "done" && identity?.username && (
-                    <motion.p
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="mt-2 text-xs text-emerald-400"
-                    >
-                      Tag claimed — you're on the leaderboard.
-                    </motion.p>
-                  )}
-                  {tagState === "error" && <p className="mt-2 text-xs text-red-400">{tagError}</p>}
                 </div>
 
                 {/* Leaderboard */}
@@ -1945,7 +1827,7 @@ export default function PageClient() {
                 className="mt-8 p-4 rounded-2xl bg-white/[0.02] border border-white/[0.04]"
               >
                 <p className="text-sm text-white/60 leading-relaxed">
-                  Each source is authorized separately — Vana processes one at a time. Approving opens a Vana tab where you authenticate, grant permission, and keep both tabs open until the connection confirms. The data flows securely from your vault to your Nodea card. Credentials are never exposed, and you can revoke access anytime from your Vana account.
+                  Each source is approved separately, because Vana asks for one at a time. Approving opens a Vana tab — enter your profile there, approve, and keep both tabs open until it says connected. That tab hands the data over; this one collects it. We never see a password, and you can revoke access from your Vana account whenever you want.
                 </p>
               </motion.div>
 
@@ -2332,7 +2214,7 @@ export default function PageClient() {
               {
                 icon: Lock,
                 title: "Private by design",
-                desc: "Authorize access with your wallet. Review exactly what we request, and revoke anytime.",
+                desc: "No wallet, no seed phrase, no password. You approve exactly what we read, and revoke anytime.",
                 accent: "from-blue-400/20 to-blue-400/0 text-blue-300",
               },
               {
@@ -2549,7 +2431,7 @@ export default function PageClient() {
                 <ArrowRight className="w-5 h-5" />
               </motion.button>
               <p className="mt-5 text-xs text-white/30">
-                Free during Vana Cup 2026 · Powered by Vana
+                Free during Vana Cup 2026 · No wallet needed
               </p>
             </div>
           </motion.div>

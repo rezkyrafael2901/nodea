@@ -117,14 +117,16 @@ function canonicalize(source: string, input: string): { url: string; name: strin
   }
 
   if (source === "instagram") {
+    // Strip a leading @ — users type @username naturally (same as YouTube).
+    const trimmed = s.startsWith("@") ? s.slice(1) : s;
     // Bare username: "nasa"
-    const bare = !hasScheme && /^[A-Za-z0-9_.]{1,30}$/.test(s) ? s : null;
+    const bare = !hasScheme && /^[A-Za-z0-9_.]{1,30}$/.test(trimmed) ? trimmed : null;
     if (bare) return { url: `https://www.instagram.com/${bare}/`, name: bare };
 
     // URL (with or without scheme): parse host + path explicitly.
     let path = "";
     try {
-      const u = new URL(hasScheme ? s : `https://${s}`);
+      const u = new URL(hasScheme ? trimmed : `https://${trimmed}`);
       const host = u.hostname.replace(/^www\./, "").toLowerCase();
       if (!(host === "instagram.com" || host.endsWith(".instagram.com") || host === "instagr.am" || host.endsWith(".instagr.am"))) {
         return null;
@@ -145,14 +147,16 @@ function canonicalize(source: string, input: string): { url: string; name: strin
   }
 
   if (source === "linkedin") {
+    // Strip a leading @ — users type @username naturally.
+    const trimmed = s.startsWith("@") ? s.slice(1) : s;
     // Bare username: "johndoe" or "john-doe-123"
-    const bare = !hasScheme && /^[A-Za-z0-9-]{2,100}$/.test(s) ? s : null;
+    const bare = !hasScheme && /^[A-Za-z0-9-]{2,100}$/.test(trimmed) ? trimmed : null;
     if (bare) return { url: `https://www.linkedin.com/in/${bare}`, name: bare };
 
     // URL (with or without scheme): parse host + path explicitly.
     let path = "";
     try {
-      const u = new URL(hasScheme ? s : `https://${s}`);
+      const u = new URL(hasScheme ? trimmed : `https://${trimmed}`);
       const host = u.hostname.replace(/^www\./, "").toLowerCase();
       if (!(host === "linkedin.com" || host.endsWith(".linkedin.com"))) {
         return null;
