@@ -73,6 +73,7 @@ import {
   Clock,
   Link,
   ArrowRight,
+  BookOpen,
 } from "lucide-react";
 
 type ConnectState =
@@ -2493,6 +2494,57 @@ export default function PageClient() {
               </div>
             </div>
           </motion.article>
+
+          {/* ── More reads (mini-articles) ── */}
+          <div className="mt-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.07] bg-white/[0.02] text-[11px] uppercase tracking-widest text-white/40 mb-5">
+              <BookOpen className="w-3.5 h-3.5 text-cyan-300" /> More reads
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Mini article 1 */}
+              <motion.article
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-60px" }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="relative rounded-[2rem] border border-white/[0.07] bg-white/[0.02] p-6 overflow-hidden"
+              >
+                <h3 className="font-display-hero text-xl md:text-2xl font-semibold tracking-tighter text-white leading-tight">
+                  Your playlists know you better than your bio
+                </h3>
+                <p className="mt-3 text-[15px] text-white/55 leading-relaxed">
+                  The songs you replay at 2am, the code you refactor, the games you actually
+                  finish — they&apos;re your real fingerprints. A bio is what you want people to
+                  think. Your data is what you actually do. Nodea reads the second one.
+                </p>
+                <blockquote className="border-l-2 border-cyan-400/60 pl-4 py-1 text-white/60 italic text-sm mt-4">
+                  &quot;You are the sum of what you do — not what you claim.&quot;
+                </blockquote>
+              </motion.article>
+
+              {/* Mini article 2 */}
+              <motion.article
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-60px" }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="relative rounded-[2rem] border border-white/[0.07] bg-white/[0.02] p-6 overflow-hidden"
+              >
+                <h3 className="font-display-hero text-xl md:text-2xl font-semibold tracking-tighter text-white leading-tight">
+                  You wrote your story. Somebody else is reading it.
+                </h3>
+                <p className="mt-3 text-[15px] text-white/55 leading-relaxed">
+                  Every like, scroll and purchase gets analyzed — by platforms, ad networks,
+                  researchers. They often know your habits better than your closest friends.
+                  The only one missing from that conversation is you. Nodea puts the mirror
+                  back in your hands.
+                </p>
+                <blockquote className="border-l-2 border-cyan-400/50 pl-3 my-1 text-white/60 italic text-sm mt-4">
+                  &quot;Your data tells your story. You should be the one reading it.&quot;
+                </blockquote>
+              </motion.article>
+            </div>
+          </div>
         </section>
           </>
         )}
