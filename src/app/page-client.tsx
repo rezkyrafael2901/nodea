@@ -731,7 +731,7 @@ export default function PageClient() {
       const response = await fetch("/api/identity", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, sources: identities }),
+        body: JSON.stringify({ prompt, sources: identities, mode: "auto" }),
       });
       if (!response.ok) {
         const err = await response.json().catch(() => ({ error: "AI generation failed" }));
@@ -1280,9 +1280,9 @@ export default function PageClient() {
               transition={{ delay: 0.2, duration: 0.7, ease: easeOut }}
               className="font-display-hero text-5xl md:text-7xl lg:text-[5.2rem] font-semibold tracking-tighter leading-[1.02] mb-6"
             >
-              <span className="gradient-white">Your Data.</span>
+              <span className="gradient-white">Meet yourself</span>
               <br />
-              <span className="gradient-brand">Your Proof.</span>
+              <span className="gradient-brand">in your data.</span>
             </motion.h1>
 
             <motion.p
@@ -1338,7 +1338,7 @@ export default function PageClient() {
               <span className="inline-flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5" /> Revoke anytime</span>
             </motion.p>
 
-            {/* Source orbit — "Your Data. Your Proof." visual */}
+            {/* Source orbit — "Meet yourself in your data." visual */}
             <motion.div
               initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -1453,7 +1453,7 @@ export default function PageClient() {
                 a single, portable identity card. Connect GitHub, Instagram, Spotify, YouTube,
                 Steam and ChatGPT — we read your actual activity with your permission, score it,
                 and build a card that represents who you really are online. No questionnaires,
-                no self-reported hype. <span className="text-white/80 font-medium">Your Data. Your Proof.</span>
+                no self-reported hype. <span className="text-white/80 font-medium">Meet yourself in your data.</span>
               </p>
             </div>
             <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -2124,7 +2124,7 @@ export default function PageClient() {
                     transition={{ duration: 0.4, ease: easeOut }}
                     className="space-y-5"
                   >
-                    {/* Demo Mode badge — AI analysis is not configured */}
+                    {/* Demo/Fallback badge — shows why AI analysis used mock */}
                     {(identityResult as Record<string, any>).isMock ? (
                       <motion.div
                         initial={{ opacity: 0 }}
@@ -2133,7 +2133,21 @@ export default function PageClient() {
                       >
                         <span className="text-xs font-medium">⚠️ Demo Mode</span>
                         <span className="text-[10px] text-amber-200/60">
-                          AI analysis belum dikonfigurasi — hasil ini contoh (template), bukan analisis data asli.
+                          {(() => {
+                            const r = identityResult as Record<string, any>;
+                            const reason = r.fallbackReason;
+                            const mode = r.mode;
+                            if (reason === "no_api_key") return "API key belum diset — pakai template demo.";
+                            if (reason === "mock_only_mode") return "Mode demo dipaksa (mock-only).";
+                            if (reason === "quota_exceeded") return "Kuota LLM habis — otomatis pakai template.";
+                            if (reason === "rate_limited") return "Terlalu banyak request — pakai template.";
+                            if (reason === "timeout") return "LLM timeout — fallback ke template.";
+                            if (reason === "network_error") return "Jaringan error — fallback ke template.";
+                            if (reason === "server_error") return "Server LLM error — fallback ke template.";
+                            if (reason === "invalid_json" || reason === "parse_error")
+                              return "Respons LLM tidak valid — fallback ke template.";
+                            return `Fallback: ${reason || "unknown"} — pakai template.`;
+                          })()}
                         </span>
                       </motion.div>
                     ) : null}
@@ -2370,7 +2384,7 @@ export default function PageClient() {
               },
               {
                 icon: Share2,
-                title: "One point of identity",
+                title: "Meet yourself anywhere",
                 desc: "A single portable card that proves your digital footprint — shareable anywhere.",
                 accent: "from-cyan-400/20 to-cyan-400/0 text-cyan-300",
               },
@@ -2547,7 +2561,7 @@ export default function PageClient() {
                   <span className="font-display text-lg font-semibold tracking-tight text-white">Nodea</span>
                 </button>
                 <p className="text-sm text-white/35 max-w-xs leading-relaxed">
-                  Your Data. Your Proof. Your digital identity, built from real activity — not a questionnaire.
+                  Meet yourself in your data. Your digital identity, built from real activity — not a questionnaire.
                 </p>
                 <div className="flex items-center gap-2 mt-5">
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-400">

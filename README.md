@@ -1,6 +1,6 @@
 # 👁️ Nodea — Multi-Source Identity Card
 
-Connect everything. See who you really are in one card.
+Meet yourself in your data. Connect everything. See who you really are in one card.
 
 **Built for Vana Cup 2026** — competing on builders.vana.org
 
