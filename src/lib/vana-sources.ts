@@ -134,6 +134,24 @@ export const DATA_SOURCES: DataSource[] = [
       "Come back here and connect — your data is already synced.",
     ],
   },
+  {
+    id: "linkedin",
+    name: "LinkedIn",
+    icon: "linkedin",
+    description: "Your professional journey — career, skills & network.",
+    scopes: ["linkedin.profile"],
+    desktopScopes: ["linkedin.profile", "linkedin.experience", "linkedin.education", "linkedin.skills"],
+    maturity: "beta",
+    onboarded: false,
+    platform: "web",
+    handle: {
+      prefix: "linkedin.com/in/",
+      placeholder: "yourusername or paste profile link",
+      urlTemplate: "https://www.linkedin.com/in/{handle}",
+      hint: "Your LinkedIn username, or paste your profile link (linkedin.com/in/...).",
+    },
+    findIt: null,
+  },
 ];
 
 export interface IdentityData {

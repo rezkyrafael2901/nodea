@@ -5,8 +5,6 @@
  * merged with the prize pool. Server-side fetched, remotly cached in
  * globalThis for a few minutes to avoid hammering the Cup API.
  *
- * Query: { ref?: string } — optional referral code to highlight.
- *
  * Response:
  * {
  *   ok: true,
@@ -15,7 +13,10 @@
  *   total: number,
  *   pool: number,
  *   championPayout: number,
- *   ref?: { code, atRank, referrerCut }
+ *   runnerUp: number,
+ *   places: number,
+ *   cupClosesAt: string,
+ *   paidBy: string
  * }
  */
 
@@ -24,8 +25,6 @@ import {
   type LeaderboardEntry,
   type PrizeInfo,
   REWARD_CONFIG,
-  referralCodeFor,
-  referrerCut,
 } from "@/lib/rewards";
 
 const LEADERBOARD_URL = "https://builders.vana.org/api/leaderboard";
@@ -57,8 +56,6 @@ async function fetchJson(url: string): Promise<unknown | null> {
 }
 
 export async function GET(request: NextRequest) {
-  const ref = request.nextUrl.searchParams.get("ref")?.slice(0, 40) ?? null;
-
   const now = Date.now();
   let body: unknown = cached && now - cached.at < CACHE_MS ? cached.data : null;
   let fromCache = body !== null;
@@ -88,17 +85,6 @@ export async function GET(request: NextRequest) {
   const pool = prizeInfo?.pool ?? REWARD_CONFIG.pool;
   const championPayout = prizeInfo?.championPayout ?? REWARD_CONFIG.championPayout;
 
-  let refInfo: { code: string; atRank: number | null; referrerCut: number } | null = null;
-  if (ref) {
-    const code = referralCodeFor(ref);
-    const atRank = standings.findIndex((e) => referralCodeFor(e.name) === code);
-    refInfo = {
-      code,
-      atRank: atRank === -1 ? null : standings[atRank].rank,
-      referrerCut: referrerCut(championPayout),
-    };
-  }
-
   return NextResponse.json({
     ok: true,
     source: "builders.vana.org",
@@ -111,9 +97,7 @@ export async function GET(request: NextRequest) {
     championPayout,
     runnerUp: REWARD_CONFIG.runnerUpPrize,
     places: REWARD_CONFIG.places,
-    shareOfWinnings: REWARD_CONFIG.shareOfWinnings,
     cupClosesAt: REWARD_CONFIG.cupClosesAt,
     paidBy: REWARD_CONFIG.paidBy,
-    ref: refInfo,
   });
 }

@@ -1,13 +1,11 @@
 /**
- * rewards.ts — Vana Cup reward config + referral helpers.
+ * rewards.ts — Vana Cup reward config + identity helpers.
  *
  * Mirrors the Patina-style reward/referral gamification layer.
  * Pure constants + pure functions — safe for client & server.
  */
 
 export const REWARD_CONFIG = {
-  /** Share of the champion's winnings that goes to the referrer. */
-  shareOfWinnings: 0.5,
   /** Number of paid places on the leaderboard. */
   places: 50,
   championPrize: 5000,
@@ -47,27 +45,6 @@ export interface PrizeInfo {
 }
 
 /**
- * Deterministic referral code from a username: lowercase alnum only.
- */
-export function referralCodeFor(username: string): string {
-  return username.toLowerCase().replace(/[^a-z0-9]/g, "");
-}
-
-/**
- * Full referral URL with ?ref=<code>.
- */
-export function referralUrl(code: string, base = "https://nodea-app.vercel.app"): string {
-  return `${base}/?ref=${encodeURIComponent(code)}`;
-}
-
-/**
- * Estimate the referrer's cut from a champion payout.
- */
-export function referrerCut(championPayout: number, share = REWARD_CONFIG.shareOfWinnings): number {
-  return Math.round(championPayout * share * 100) / 100;
-}
-
-/**
  * Client-identity helpers. The tag is persisted in localStorage under this key.
  */
 export const IDENTITY_KEY = "nodea:identity";
@@ -76,7 +53,6 @@ export interface NodeaIdentity {
   id: string; // stable device id (crypto.randomUUID fallback)
   username: string | null;
   createdAt: number;
-  referralCode: string | null;
 }
 
 export function makeIdentity(): NodeaIdentity {
@@ -84,7 +60,7 @@ export function makeIdentity(): NodeaIdentity {
     (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
       ? crypto.randomUUID()
       : `dev-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`) as string;
-  return { id, username: null, createdAt: Date.now(), referralCode: null };
+  return { id, username: null, createdAt: Date.now() };
 }
 
 export function loadIdentity(): NodeaIdentity | null {

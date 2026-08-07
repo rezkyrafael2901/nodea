@@ -24,6 +24,7 @@ const ORBIT_SOURCES: OrbitSource[] = [
   { id: "youtube", radius: 0.35, size: 32, duration: 14, startAngle: 180 },
   { id: "chatgpt", radius: 0.27, size: 30, duration: 11, startAngle: 240, counter: true },
   { id: "steam", radius: 0.37, size: 32, duration: 17, startAngle: 300 },
+  { id: "linkedin", radius: 0.49, size: 30, duration: 13, startAngle: 30 },
 ];
 
 export function SourceOrbit({ size = 264 }: { size?: number }) {

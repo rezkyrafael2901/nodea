@@ -144,6 +144,41 @@ function canonicalize(source: string, input: string): { url: string; name: strin
     return { url: `https://www.instagram.com/${first}/`, name: first };
   }
 
+  if (source === "linkedin") {
+    // Bare username: "johndoe" or "john-doe-123"
+    const bare = !hasScheme && /^[A-Za-z0-9-]{2,100}$/.test(s) ? s : null;
+    if (bare) return { url: `https://www.linkedin.com/in/${bare}`, name: bare };
+
+    // URL (with or without scheme): parse host + path explicitly.
+    let path = "";
+    try {
+      const u = new URL(hasScheme ? s : `https://${s}`);
+      const host = u.hostname.replace(/^www\./, "").toLowerCase();
+      if (!(host === "linkedin.com" || host.endsWith(".linkedin.com"))) {
+        return null;
+      }
+      path = u.pathname;
+    } catch {
+      return null;
+    }
+
+    const segs = path.split("/").filter(Boolean);
+    if (segs.length === 0) return null;
+    const first = segs[0].toLowerCase();
+    // /in/<username> — canonical profile URL
+    if (first === "in" && segs.length >= 2 && /^[A-Za-z0-9-]{2,100}$/.test(segs[1])) {
+      return { url: `https://www.linkedin.com/in/${segs[1]}`, name: segs[1] };
+    }
+    // /pub/<name> — legacy public profile URL (deprecated by LinkedIn, still valid)
+    if (first === "pub" && segs.length >= 2 && /^[A-Za-z0-9-]{2,100}$/.test(segs[1])) {
+      return { url: `https://www.linkedin.com/in/${segs[1]}`, name: segs[1] };
+    }
+    // Company/orgs/jobs/feed links are NOT personal profiles.
+    const badPrefixes = /^(company|orgs|jobs|feed|groups|school|learning|pulse|post|posts|events|search|m|authwall)$/i;
+    if (badPrefixes.test(first)) return null;
+    return null;
+  }
+
   return null;
 }
 
@@ -216,7 +251,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: "source and url are required" }, { status: 400 });
     }
 
-    if (!["spotify", "youtube", "github", "instagram"].includes(source)) {
+    if (!["spotify", "youtube", "github", "instagram", "linkedin"].includes(source)) {
       return NextResponse.json({ ok: false, error: `Unsupported source: ${source}` }, { status: 400 });
     }
 
@@ -227,6 +262,8 @@ export async function POST(request: NextRequest) {
       github: "GitHub wants your profile link: github.com/<username>.",
       instagram:
         "Instagram wants your PROFILE link: instagram.com/<username>. (Post/reel/TV/stories links won't work — find your profile and copy that URL.)",
+      linkedin:
+        "LinkedIn wants your PERSONAL profile link: linkedin.com/in/<username>. (Company pages, job posts, and feed links won't work — open your profile and copy that URL.)",
     };
 
     const canonical = canonicalize(source, url);

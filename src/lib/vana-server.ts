@@ -35,6 +35,10 @@ const SOURCE_SCOPES: Record<string, { web: string[]; full: string[] }> = {
     web: ["steam.profile"],
     full: ["steam.profile", "steam.games", "steam.friends"],
   },
+  linkedin: {
+    web: ["linkedin.profile"],
+    full: ["linkedin.profile", "linkedin.experience", "linkedin.education", "linkedin.skills"],
+  },
 };
 
 export function getSourceScopes(sourceId: string, mode: "web" | "full" = "web"): string[] | null {

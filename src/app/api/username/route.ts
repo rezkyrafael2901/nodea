@@ -1,23 +1,16 @@
 /**
  * POST /api/username
  *
- * Claim / validate a Nodea Tag (username). Mirrors Patina's
- * POST /api/patina/username — the client persists the result locally
- * and sends it here to confirm the tag is well-formed and to receive
- * the referral code + share-of-winnings math.
+ * Claim / validate a Nodea Tag (username). The client persists the
+ * result locally and sends it here to confirm the tag is well-formed.
  *
  * Body: { id: string, username: string }
  *
- * Response: { ok, username, referralCode, referralUrl, referrerCut, reward }
+ * Response: { ok, username, reward }
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import {
-  REWARD_CONFIG,
-  referralCodeFor,
-  referralUrl,
-  referrerCut,
-} from "@/lib/rewards";
+import { REWARD_CONFIG } from "@/lib/rewards";
 
 const USERNAME_RE = /^[a-zA-Z0-9_-]{3,24}$/;
 
@@ -46,17 +39,11 @@ export async function POST(request: NextRequest) {
   }
 
   const username = raw;
-  const code = referralCodeFor(username);
-  const cut = referrerCut(REWARD_CONFIG.championPayout);
 
   return NextResponse.json({
     ok: true,
     username,
-    referralCode: code,
-    referralUrl: referralUrl(code),
-    referrerCut: cut,
     reward: {
-      shareOfWinnings: REWARD_CONFIG.shareOfWinnings,
       places: REWARD_CONFIG.places,
       championPrize: REWARD_CONFIG.championPrize,
       runnerUpPrize: REWARD_CONFIG.runnerUpPrize,

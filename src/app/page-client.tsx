@@ -18,8 +18,6 @@ import {
   loadIdentity,
   makeIdentity,
   saveIdentity,
-  referralCodeFor,
-  referralUrl,
 } from "@/lib/rewards";
 import { DataSoulCard } from "@/components/data-soul-card";
 import { BrandIconTile, BrandIcon, type BrandId } from "@/components/brand-icons";
@@ -47,7 +45,6 @@ import {
   UserPlus,
   Menu,
   Monitor,
-  Smartphone,
   Globe,
   Lock,
   Unlock,
@@ -252,7 +249,6 @@ export default function PageClient() {
   const [tagInput, setTagInput] = useState("");
   const [tagState, setTagState] = useState<"idle" | "saving" | "done" | "error">("idle");
   const [tagError, setTagError] = useState("");
-  const [referralCount, setReferralCount] = useState(0);
 
   // ── Leaderboard (real Vana Cup standings) ──
   const [standings, setStandings] = useState<LeaderboardEntry[] | null>(null);
@@ -260,7 +256,7 @@ export default function PageClient() {
   const [lbLoading, setLbLoading] = useState(true);
   const [lbError, setLbError] = useState("");
 
-  // Load identity + count referrals once
+  // Load identity once
   useEffect(() => {
     try {
       let id = loadIdentity();
@@ -269,16 +265,6 @@ export default function PageClient() {
         saveIdentity(id);
       }
       setIdentity(id);
-      // count how many times this browser has seen a referral
-      const seen = localStorage.getItem("nodea:ref-seen");
-      if (seen) setReferralCount(parseInt(seen, 10) || 0);
-      const params = new URLSearchParams(window.location.search);
-      const ref = params.get("ref");
-      if (ref) {
-        const n = (parseInt(seen ?? "0", 10) || 0) + 1;
-        localStorage.setItem("nodea:ref-seen", String(n));
-        setReferralCount(n);
-      }
     } catch {}
   }, []);
 
@@ -335,7 +321,6 @@ export default function PageClient() {
       const updated: NodeaIdentity = {
         ...identity,
         username: data.username,
-        referralCode: data.referralCode,
       };
       setIdentity(updated);
       saveIdentity(updated);
@@ -1250,7 +1235,7 @@ export default function PageClient() {
           </div>
         </motion.header>
 
-        <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 md:py-20 lg:py-28">
+        <main className={`mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ${view === "article" ? "py-0" : "py-12 md:py-20 lg:py-28"}`}>
           {view === "home" && (
             <>
           {/* ── Hero (Framer-style) ── */}
@@ -1334,7 +1319,7 @@ export default function PageClient() {
               transition={{ delay: 0.55 }}
               className="mt-6 text-xs md:text-sm text-white/35 flex flex-wrap items-center justify-center gap-x-5 gap-y-2"
             >
-              <span className="inline-flex items-center gap-1.5"><Lock className="w-3.5 h-3.5" /> No wallet needed</span>
+              <span className="inline-flex items-center gap-1.5"><Shield className="w-3.5 h-3.5" /> Self-custody via Vana Connect</span>
               <span className="inline-flex items-center gap-1.5"><Shield className="w-3.5 h-3.5" /> You approve what we read</span>
               <span className="inline-flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5" /> Revoke anytime</span>
             </motion.p>
@@ -1460,7 +1445,7 @@ export default function PageClient() {
             <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
                 { icon: Layers, title: "Multi-source", desc: "Six real platforms, one unified score built from live activity." },
-                { icon: Lock, title: "Private by design", desc: "You approve exactly what we read, and you can revoke anytime." },
+                { icon: Lock, title: "Private by design", desc: "Authorize granular access — read once, revoke anytime." },
                 { icon: Share2, title: "Portable", desc: "One card you can share, compare and keep across every device." },
               ].map((f) => (
                 <div key={f.title} className="rounded-3xl border border-white/[0.07] bg-white/[0.02] p-6 text-center">
@@ -1598,7 +1583,7 @@ export default function PageClient() {
             variants={sectionVariants}
             initial="initial"
             animate="animate"
-            className="scroll-mt-24 grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 lg:gap-10 items-start"
+            className="scroll-mt-24 grid grid-cols-1 gap-8 lg:gap-10 items-start max-w-5xl mx-auto w-full"
           >
             {/* Left: Data Sources */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
@@ -1646,10 +1631,6 @@ export default function PageClient() {
                       className="w-2.5 h-2.5 rounded-full bg-emerald-400"
                     />
                     <span className="text-[11px] font-semibold uppercase tracking-wider text-white/45">Instant Connect</span>
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-medium">
-                      <Smartphone className="w-3 h-3 inline-block mr-1" />
-                      Mobile OK
-                    </span>
                     <span className="ml-auto text-[11px] text-white/25">
                       {webSources.filter((s) => onboardedSources.has(s.id)).length}/{webSources.length}
                     </span>
@@ -1679,10 +1660,6 @@ export default function PageClient() {
                       className="w-2.5 h-2.5 rounded-full bg-orange-400"
                     />
                     <span className="text-[11px] font-semibold uppercase tracking-wider text-white/45">Deep Data</span>
-                    <span className="px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 text-[10px] font-medium">
-                      <Monitor className="w-3 h-3 inline-block mr-1" />
-                      Vana Desktop
-                    </span>
                     <span className="ml-auto text-[11px] text-white/25">
                       {desktopSources.filter((s) => onboardedSources.has(s.id)).length}/{desktopSources.length}
                     </span>
@@ -1760,19 +1737,19 @@ export default function PageClient() {
                       num: "01",
                       icon: Link,
                       title: "Connect an account",
-                      desc: "No wallet, no download, no seed phrase. Start with the account you've had the longest, and your score appears straight away. Add more to raise it.",
+                      desc: "Link a data source through Vana Connect. Approve granular permissions, and your score is generated instantly. Add more sources to deepen your profile.",
                     },
                     {
                       num: "02",
                       icon: Shield,
                       title: "You approve what we read",
-                      desc: "Your accounts stay in your own store, not ours. You approve exactly what we read, we read it once, and you can revoke access whenever you want. We never see a password.",
+                      desc: "Your data stays in your own personal data vault — never ours. Approve granular access, data is read once, and you keep full control to revoke anytime. Credentials are never exposed.",
                     },
                     {
                       num: "03",
                       icon: ArrowRight,
                       title: "Save it, and it travels",
-                      desc: "Sign in with Google to keep your score across every device and put it on the leaderboard. Other apps can check it without you doing any of this again.",
+                      desc: "Persist your Nodea card to mainnet. Other apps can verify your identity and score without repeating setup.",
                     },
                   ].map((step, i) => (
                     <motion.div
@@ -1833,31 +1810,12 @@ export default function PageClient() {
                   </div>
                   <p className="text-sm text-white/50 mb-3">
                     {identity?.username
-                      ? `Your tag: ${identity.username} · Referral ${identity.referralCode ? `nodea.app/?ref=${identity.referralCode}` : "—"}${
-                          referralCount > 0 ? ` · ${referralCount} referral${referralCount > 1 ? "s" : ""} seen` : ""
-                        }`
-                      : "A tag keeps your score across devices and puts you on the leaderboard. You get a referral link — when a friend connects through it and wins, you share the pot."}
+                      ? `Your tag: ${identity.username}`
+                      : "A tag keeps your score across devices and puts you on the leaderboard."}
                   </p>
                   {identity?.username ? (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        onClick={() => {
-                          if (identity.referralCode) {
-                            const url = referralUrl(identity.referralCode);
-                            navigator.clipboard?.writeText(url).catch(() => {});
-                            setStatusMessage(`Referral link copied: ${url}`);
-                          }
-                        }}
-                        className="inline-flex items-center justify-center min-h-[44px] gap-2 px-3 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/25 text-amber-200 text-sm font-medium transition-colors"
-                      >
-                        <Copy className="w-4 h-4" />
-                        Copy referral link
-                      </button>
-                      <span className="text-xs text-white/40">
-                        {poolInfo
-                          ? `You'd earn ${(poolInfo.championPayout * REWARD_CONFIG.shareOfWinnings).toFixed(2)} VANA if your referral wins`
-                          : `You'd earn ${REWARD_CONFIG.shareOfWinnings * 100}% of the pot if your referral wins`}
-                      </span>
+                    <div className="text-xs text-white/40">
+                      Connected with {DATA_SOURCES.length} data sources — the more you connect, the fuller your Nodea card.
                     </div>
                   ) : (
                     <div className="flex gap-2">
@@ -1892,7 +1850,7 @@ export default function PageClient() {
                       animate={{ opacity: 1 }}
                       className="mt-2 text-xs text-emerald-400"
                     >
-                      Tag claimed — your referral link is ready above.
+                      Tag claimed — you're on the leaderboard.
                     </motion.p>
                   )}
                   {tagState === "error" && <p className="mt-2 text-xs text-red-400">{tagError}</p>}
@@ -1987,7 +1945,7 @@ export default function PageClient() {
                 className="mt-8 p-4 rounded-2xl bg-white/[0.02] border border-white/[0.04]"
               >
                 <p className="text-sm text-white/60 leading-relaxed">
-                  Each source is approved separately, because Vana asks for one at a time. Approving opens a Vana tab — enter your profile there, approve, and keep both tabs open until it says connected. That tab hands the data over; this one collects it. We never see a password, and you can revoke access from your Vana account whenever you want.
+                  Each source is authorized separately — Vana processes one at a time. Approving opens a Vana tab where you authenticate, grant permission, and keep both tabs open until the connection confirms. The data flows securely from your vault to your Nodea card. Credentials are never exposed, and you can revoke access anytime from your Vana account.
                 </p>
               </motion.div>
 
@@ -2374,13 +2332,13 @@ export default function PageClient() {
               {
                 icon: Lock,
                 title: "Private by design",
-                desc: "No wallet, no seed phrase, no password. You approve exactly what we read, and revoke anytime.",
+                desc: "Authorize access with your wallet. Review exactly what we request, and revoke anytime.",
                 accent: "from-blue-400/20 to-blue-400/0 text-blue-300",
               },
               {
                 icon: Zap,
                 title: "Instant score",
-                desc: "The moment you connect your first account your Soul Score appears. Add more sources to deepen it.",
+                desc: "The moment you link your first source, your Nodea score appears. Add more sources to deepen it.",
                 accent: "from-cyan-400/20 to-cyan-400/0 text-cyan-300",
               },
               {
@@ -2417,7 +2375,7 @@ export default function PageClient() {
         {view === "article" && (
           <>
         {/* ── Article — Why your data matters to you ── */}
-        <section id="article" className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 mt-20 md:mt-28 scroll-mt-24">
+        <section id="article" className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 mt-8 md:mt-12 lg:mt-14 scroll-mt-24">
           <motion.article
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -2496,7 +2454,7 @@ export default function PageClient() {
           </motion.article>
 
           {/* ── More reads (mini-articles) ── */}
-          <div className="mt-4">
+          <div className="mt-10">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.07] bg-white/[0.02] text-[11px] uppercase tracking-widest text-white/40 mb-5">
               <BookOpen className="w-3.5 h-3.5 text-cyan-300" /> More reads
             </div>
@@ -2591,7 +2549,7 @@ export default function PageClient() {
                 <ArrowRight className="w-5 h-5" />
               </motion.button>
               <p className="mt-5 text-xs text-white/30">
-                Free during Vana Cup 2026 · No wallet needed
+                Free during Vana Cup 2026 · Powered by Vana
               </p>
             </div>
           </motion.div>
@@ -2649,7 +2607,7 @@ export default function PageClient() {
               <div>
                 <h4 className="text-xs font-semibold uppercase tracking-widest text-white/45 mb-4">Data sources</h4>
                 <ul className="space-y-2.5">
-                  {DATA_SOURCES.slice(0, 5).map((s) => (
+                  {DATA_SOURCES.slice(0, 7).map((s) => (
                     <li key={s.id}>
                       <button
                         onClick={() => goView("connect")}
