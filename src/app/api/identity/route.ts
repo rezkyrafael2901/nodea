@@ -310,12 +310,19 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   const hasOpenRouter = Boolean(process.env.OPENROUTER_API_KEY);
   const hasAnthropic = Boolean(process.env.ANTHROPIC_API_KEY);
-  const provider = hasOpenRouter ? "openrouter" : hasAnthropic ? "anthropic" : "none";
+  const hasCustom = Boolean(process.env.CUSTOM_LLM_API_KEY);
+  const provider = hasOpenRouter
+    ? "openrouter"
+    : hasAnthropic
+    ? "anthropic"
+    : hasCustom
+    ? "custom"
+    : "none";
 
   return NextResponse.json({
     status: "ok",
     provider,
-    hasApiKey: hasOpenRouter || hasAnthropic,
+    hasApiKey: hasOpenRouter || hasAnthropic || hasCustom,
     modes: ["auto", "llm-only", "mock-only"],
     defaults: { mode: "auto", timeoutMs: 25000, maxRetries: 1 },
   });

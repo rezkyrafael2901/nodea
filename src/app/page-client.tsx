@@ -2415,7 +2415,7 @@ export default function PageClient() {
 
         {view === "article" && (
           <>
-        {/* ── Article — Why data matters for AI ── */}
+        {/* ── Article — Why your data matters to you ── */}
         <section id="article" className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 mt-20 md:mt-28 scroll-mt-24">
           <motion.article
             initial={{ opacity: 0, y: 24 }}
@@ -2430,27 +2430,26 @@ export default function PageClient() {
                 <Brain className="w-3.5 h-3.5 text-cyan-300" /> Article
               </div>
               <h2 className="font-display-hero text-3xl md:text-4xl font-semibold tracking-tighter text-white leading-tight">
-                Why your data is the most important ingredient in AI
+                Why your data matters to you
               </h2>
               <p className="mt-3 text-sm text-cyan-300/80 font-medium">
-                A short read on data, AI, and why ownership matters more than ever.
+                A short read on data, identity, and why ownership matters more than ever.
               </p>
 
               <div className="mt-6 space-y-5 text-white/55 leading-relaxed text-[15px]">
                 <p>
-                  Every AI model — from the chatbot you use daily to the agent that will soon
-                  book your travel — is only as smart as the data it learns from. The raw
-                  material of the AI revolution isn&apos;t compute or code; it&apos;s{" "}
-                  <strong className="text-white font-semibold">data</strong>. More precisely:{" "}
-                  <strong className="text-white font-semibold">your data</strong> — the trails
-                  you leave across GitHub, Spotify, Instagram, YouTube, Steam and ChatGPT every
-                  single day.
+                  Every day, you leave a trail — the songs you replay, the code you push,
+                  the photos you post, the games you finish, the videos you binge. On their
+                  own, each trace looks small. Together, they form something remarkable:{" "}
+                  <strong className="text-white font-semibold">an honest mirror of who you really are</strong>.
+                  More honest than any resume. More honest than any bio. More honest than the
+                  version of yourself you carefully craft for the world.
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 my-6">
                   {[
-                    { n: "90%", t: "of model quality is data quality, not architecture" },
-                    { n: "1B+", t: "tokens of human text separate one AI era from the next" },
+                    { n: "6+", t: "sources of truth — every platform you use adds a line to your story" },
+                    { n: "100%", t: "of that story is written by you — your clicks, your posts, your playlists" },
                     { n: "0", t: "questionnaires can replace real behavioral signals" },
                   ].map((s) => (
                     <div key={s.t} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
@@ -2461,22 +2460,23 @@ export default function PageClient() {
                 </div>
 
                 <p>
-                  Here&apos;s the catch: the same data that powers AI is scattered, locked inside
-                  walled gardens, and — too often — used without the person who created it
-                  getting any say or value back. That&apos;s the gap Nodea is built for.
+                  Here&apos;s the catch: this story of you is scattered, locked inside walled
+                  gardens, and — too often — used without you ever seeing it, let alone getting
+                  anything back. You wrote it. You should be able to read it. That&apos;s the gap
+                  Nodea is built for.
                 </p>
 
                 <blockquote className="border-l-2 border-cyan-400/60 pl-4 py-1 text-white/60 italic">
-                  &quot;The next generation of AI won&apos;t be won by whoever has the biggest model —
-                  it will be won by whoever has the best, most trustworthy data. And the best
-                  data about you is yours.&quot;
+                  &quot;The most honest story about you isn&apos;t the one you tell — it&apos;s the
+                  one your data tells.&quot;
                 </blockquote>
 
                 <p>
                   By connecting your real accounts, you&apos;re not just building a scorecard —
-                  you&apos;re claiming your slice of that future. Your activity becomes a verified,
-                  portable identity: one card that proves who you are across every platform,
-                  ready for the AI agents and applications that will ask for it tomorrow.
+                  you&apos;re seeing yourself clearly for the first time. Your activity becomes a
+                  verified, portable identity: one card that reflects who you are across every
+                  platform. Yours to keep. Yours to share. Yours to own — and yes, the same data
+                  that powers every modern technology belongs to you first.
                 </p>
               </div>
 
@@ -2486,7 +2486,7 @@ export default function PageClient() {
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-shadow duration-300"
                   style={{ background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)", boxShadow: "0 8px 30px -8px rgba(79,140,255,0.5)" }}
                 >
-                  Claim your data — connect a source
+                  Meet yourself — connect a source
                   <ArrowRight className="w-4 h-4" />
                 </button>
                 <span className="text-xs text-white/35">~3 min read · Nodea Editorial</span>
