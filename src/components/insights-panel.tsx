@@ -22,6 +22,8 @@ const SOURCE_LABEL: Record<string, string> = {
   instagram: "Instagram",
   spotify: "Spotify",
   youtube: "YouTube",
+  steam: "Steam",
+  chatgpt: "ChatGPT",
   linkedin: "LinkedIn",
 };
 
