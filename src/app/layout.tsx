@@ -21,18 +21,18 @@ const ebGaramond = EB_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: "Nodea — Your Digital Identity Card",
-  description: "Connect your accounts across Vana and get a unified identity card — built from your real activity, not a questionnaire.",
+  title: "Nodea — What Your Data Says About You",
+  description: "Connect your accounts and discover the patterns, insights, and recommendations hidden in your real activity. No questionnaire — just your data, decoded.",
   openGraph: {
-    title: "Nodea — Your Digital Identity Card",
-    description: "Connect GitHub, Instagram, ChatGPT, Spotify, YouTube and Steam. Get one card that reflects your real digital self.",
+    title: "Nodea — What Your Data Says About You",
+    description: "Connect your accounts and discover the patterns, insights, and recommendations hidden in your real activity.",
     type: "website",
     images: [
       {
         url: "/api/og.png",
         width: 1200,
         height: 630,
-        alt: "Nodea Card",
+        alt: "Nodea — What Your Data Says About You",
       },
     ],
   },

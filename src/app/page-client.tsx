@@ -1084,7 +1084,7 @@ export default function PageClient() {
                   { v: "home", label: "How it works", anchor: "how" },
                   { v: "article", label: "Article" },
                   { v: "standings", label: "Standings" },
-                  { v: "card", label: "Your card" },
+                  { v: "card", label: "Your Mirror" },
                 ].map((item) => (
                   <button
                     key={item.label}
@@ -1153,7 +1153,7 @@ export default function PageClient() {
                       { v: "home", label: "How it works", anchor: "how" },
                       { v: "article", label: "Article" },
                       { v: "standings", label: "Standings" },
-                      { v: "card", label: "Your card" },
+                      { v: "card", label: "Your Mirror" },
                     ].map((item) => (
                       <button
                         key={item.label}
@@ -1194,9 +1194,9 @@ export default function PageClient() {
               transition={{ delay: 0.2, duration: 0.7, ease: easeOut }}
               className="font-display-hero text-5xl md:text-7xl lg:text-[5.2rem] font-semibold tracking-tighter leading-[1.02] mb-6"
             >
-              <span className="gradient-white">Meet yourself</span>
+              <span className="gradient-white">What your data</span>
               <br />
-              <span className="gradient-brand">in your data.</span>
+              <span className="gradient-brand">says about you.</span>
             </motion.h1>
 
             <motion.p
@@ -1205,8 +1205,9 @@ export default function PageClient() {
               transition={{ delay: 0.3, duration: 0.7, ease: easeOut }}
               className="tracking-ui text-lg md:text-xl lg:text-2xl text-white/50 max-w-3xl mx-auto leading-relaxed text-balance"
             >
-              Nodea connects the accounts you already own across Vana into a single
-              digital identity — built from your <span className="text-white/85">real activity</span>, not a questionnaire.
+              Nodea connects the accounts you already own and reads your real
+              activity — then tells you <span className="text-white/85">what it means</span>. Insights, patterns,
+              and recommendations built from your <span className="text-white/85">actual behavior</span>, not a questionnaire.
             </motion.p>
 
             {/* CTA row */}
@@ -1252,7 +1253,7 @@ export default function PageClient() {
               <span className="inline-flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5" /> Revoke anytime</span>
             </motion.p>
 
-            {/* Source orbit — "Meet yourself in your data." visual */}
+            {/* Source orbit — "What your data says about you." visual */}
             <motion.div
               initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -1363,16 +1364,15 @@ export default function PageClient() {
                 What is <span className="gradient-brand">Nodea?</span>
               </h2>
               <p className="mt-5 text-white/50 text-base md:text-lg leading-relaxed">
-                Nodea is a project that turns your real digital footprint into
-                a single, portable identity card. Connect GitHub, Instagram, Spotify, YouTube,
-                Steam and ChatGPT — we read your actual activity with your permission, score it,
-                and build a card that represents who you really are online. No questionnaires,
-                no self-reported hype. <span className="text-white/80 font-medium">Meet yourself in your data.</span>
+                Nodea is a project that reads your real activity across the accounts you
+                already use — GitHub, Instagram, Spotify, YouTube, Steam and ChatGPT — and
+                turns it into insights, patterns, and recommendations. No questionnaires,
+                no self-reported hype. <span className="text-white/80 font-medium">What your data says about you.</span>
               </p>
             </div>
             <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
-                { icon: Layers, title: "Multi-source", desc: "Six real platforms, one unified score built from live activity." },
+                { icon: Layers, title: "Multi-source", desc: "Seven real platforms, one unified picture built from live activity." },
                 { icon: Lock, title: "Private by design", desc: "You approve exactly what we read, and you can revoke anytime." },
                 { icon: Share2, title: "Portable", desc: "One card you can share, compare and keep across every device." },
               ].map((f) => (
@@ -1546,7 +1546,7 @@ export default function PageClient() {
                 </div>
                 <div>
                   <h2 className="font-display text-lg font-semibold tracking-tight leading-tight">Connect data sources</h2>
-                  <p className="tracking-ui text-xs text-white/40 mt-0.5">Pick any accounts — your card gets deeper with each one</p>
+                  <p className="tracking-ui text-xs text-white/40 mt-0.5">Pick any accounts — your mirror gets deeper with each one</p>
                 </div>
                 <motion.div
                   animate={{ scale: [1, 1.02, 1] }}
@@ -1877,7 +1877,7 @@ export default function PageClient() {
                     {generating
                       ? "Generating…"
                       : identities.length > 0
-                      ? `Generate Nodea Card${identities.length > 1 ? ` (${identities.length} sources)` : ""}`
+                      ? `Generate Your Mirror${identities.length > 1 ? ` (${identities.length} sources)` : ""}`
                       : "Connect at least one source"}
                   </span>
                 </motion.button>
@@ -1887,7 +1887,7 @@ export default function PageClient() {
                   transition={{ delay: 0.5 }}
                   className="text-center text-[11px] text-white/25 mt-3"
                 >
-                  Your card is generated from real connected data — no questionnaire.
+                  Your mirror is generated from real connected data — no questionnaire.
                 </motion.p>
               </motion.div>
 
@@ -1939,8 +1939,8 @@ export default function PageClient() {
                   2
                 </div>
                 <div>
-                  <h2 className="font-display text-lg font-semibold tracking-tight leading-tight">Your Identity</h2>
-                  <p className="tracking-ui text-xs text-white/40 mt-0.5">Your digital identity from connected data</p>
+                  <h2 className="font-display text-lg font-semibold tracking-tight leading-tight">Your Mirror</h2>
+                  <p className="tracking-ui text-xs text-white/40 mt-0.5">Insights from your connected data</p>
                 </div>
               </div>
 
@@ -2241,8 +2241,8 @@ export default function PageClient() {
               },
               {
                 icon: Share2,
-                title: "Meet yourself anywhere",
-                desc: "A single portable card that proves your digital footprint — shareable anywhere.",
+                title: "Understand yourself",
+                desc: "Insights and recommendations drawn from your real activity patterns — not a personality quiz.",
                 accent: "from-cyan-400/20 to-cyan-400/0 text-cyan-300",
               },
             ].map((f, i) => (
@@ -2343,7 +2343,7 @@ export default function PageClient() {
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-shadow duration-300"
                   style={{ background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)", boxShadow: "0 8px 30px -8px rgba(79,140,255,0.5)" }}
                 >
-                  Meet yourself — connect a source
+                  See what it says — connect a source
                   <ArrowRight className="w-4 h-4" />
                 </button>
                 <span className="text-xs text-white/35">~3 min read · Nodea Editorial</span>
@@ -2428,10 +2428,10 @@ export default function PageClient() {
               <h2 className="font-display-hero text-3xl md:text-5xl lg:text-6xl font-semibold tracking-tighter text-white leading-tight">
                 Your data has a story.
                 <br />
-                <span className="gradient-brand">Start your card.</span>
+                <span className="gradient-brand">See what it says.</span>
               </h2>
               <p className="mt-5 text-white/50 text-base md:text-lg max-w-xl mx-auto">
-                Connect one account and see your Nodea identity come to life — it takes less than a minute.
+                Connect one account and discover what your data says about you — it takes less than a minute.
               </p>
               <motion.button
                 whileHover={reducedMotion ? {} : { scale: 1.04, y: -2 }}
@@ -2469,7 +2469,7 @@ export default function PageClient() {
                   <span className="font-display text-lg font-semibold tracking-tight text-white">Nodea</span>
                 </button>
                 <p className="text-sm text-white/35 max-w-xs leading-relaxed">
-                  Meet yourself in your data. Your digital identity, built from real activity — not a questionnaire.
+                What your data says about you. Insights and recommendations built from real activity — not a questionnaire.
                 </p>
                 <div className="flex items-center gap-2 mt-5">
                   <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.06] text-[11px] text-white/45">
@@ -2485,7 +2485,7 @@ export default function PageClient() {
                     { label: "Connect", v: "connect" },
                     { label: "How it works", v: "home", anchor: "how" },
                     { label: "Leaderboard", v: "standings" },
-                    { label: "Your card", v: "card" },
+                    { label: "Your Mirror", v: "card" },
                   ].map((l) => (
                     <li key={l.label}>
                       <button
@@ -2708,7 +2708,7 @@ export default function PageClient() {
               { v: "home", label: "Home", icon: Home },
               { v: "article", label: "Article", icon: Newspaper },
               { v: "connect", label: "Connect", icon: Plus },
-              { v: "card", label: "Card", icon: CreditCard },
+              { v: "card", label: "Mirror", icon: CreditCard },
               { v: "standings", label: "Standings", icon: Trophy },
             ].map((t) => {
               const active = view === t.v;

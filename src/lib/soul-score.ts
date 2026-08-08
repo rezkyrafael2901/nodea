@@ -232,7 +232,7 @@ function tipsFor(result: { components: ScoreComponent[]; count: number; connecte
     tips.push(`Connect ${4 - result.count} more platform${result.count < 3 ? "s" : ""} for a breadth bonus.`);
   }
   if (byKey.standing && byKey.standing.points < byKey.standing.max * 0.5 && result.count >= 2) {
-    tips.push("Social proof (followers/subscribers) is the last unlock — share your card to grow it.");
+    tips.push("Social proof (followers/subscribers) is the last unlock — share your mirror to grow it.");
   }
   if (tips.length === 0) {
     tips.push("Your soul is well-connected. Generate your Soul Card and share it!");
