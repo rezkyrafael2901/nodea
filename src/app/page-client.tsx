@@ -1184,20 +1184,6 @@ export default function PageClient() {
             animate="animate"
             className="relative text-center mb-20 md:mb-28 pt-6 md:pt-10"
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.1, duration: 0.5, ease: easeSpring }}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] text-xs text-white/60 mb-8"
-            >
-              <motion.span
-                animate={{ scale: [1, 1.3, 1] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-                className="w-2 h-2 rounded-full bg-emerald-400"
-              />
-              <span>Live on Vana</span>
-            </motion.div>
-
             <motion.h1
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1257,7 +1243,6 @@ export default function PageClient() {
               transition={{ delay: 0.55 }}
               className="mt-6 text-xs md:text-sm text-white/35 flex flex-wrap items-center justify-center gap-x-5 gap-y-2"
             >
-              <span className="inline-flex items-center gap-1.5"><Shield className="w-3.5 h-3.5" /> Self-custody via Vana Connect</span>
               <span className="inline-flex items-center gap-1.5"><Lock className="w-3.5 h-3.5" /> No wallet needed</span>
               <span className="inline-flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5" /> Revoke anytime</span>
             </motion.p>
@@ -2456,9 +2441,6 @@ export default function PageClient() {
                   Meet yourself in your data. Your digital identity, built from real activity — not a questionnaire.
                 </p>
                 <div className="flex items-center gap-2 mt-5">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Live on Vana
-                  </span>
                   <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.06] text-[11px] text-white/45">
                     Vana Cup 2026
                   </span>

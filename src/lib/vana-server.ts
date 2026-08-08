@@ -16,7 +16,7 @@ const SOURCE_SCOPES: Record<string, { web: string[]; full: string[] }> = {
     full: ["github.contributions", "github.events", "github.history", "github.profile", "github.repositories", "github.starred"],
   },
   instagram: {
-    web: ["instagram.profile", "instagram.posts"],
+    web: ["instagram.profile"],
     full: ["instagram.profile", "instagram.posts", "instagram.following", "instagram.ads"],
   },
   chatgpt: {

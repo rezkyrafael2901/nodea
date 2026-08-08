@@ -54,7 +54,7 @@ export const DATA_SOURCES: DataSource[] = [
     name: "Instagram",
     icon: "instagram",
     description: "How much you post, and how many follow you.",
-    scopes: ["instagram.profile", "instagram.posts"],
+    scopes: ["instagram.profile"],
     desktopScopes: ["instagram.profile", "instagram.posts", "instagram.following", "instagram.ads"],
     maturity: "stable",
     onboarded: false,
