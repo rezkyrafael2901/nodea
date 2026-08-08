@@ -634,6 +634,8 @@ export default function PageClient() {
 
   const cancelConnect = () => {
     if (pollingRef.current) clearInterval(pollingRef.current);
+    try { popupRef.current?.close(); } catch {}
+    popupRef.current = null;
     clearPending();
     setActiveSource(null);
     setActiveRequestId(null);
@@ -1408,7 +1410,15 @@ export default function PageClient() {
                 {connectState === "error" && <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />}
                 {connectState === "done" && <CheckCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />}
                 {connectState !== "error" && connectState !== "done" && <Loader2 className="w-5 h-5 mt-0.5 flex-shrink-0 animate-spin text-blue-400" />}
-                <span>{statusMessage}</span>
+                <span className="flex-1">{statusMessage}</span>
+                {(connectState === "awaiting_approval" || connectState === "requesting") && (
+                  <button
+                    onClick={cancelConnect}
+                    className="inline-flex items-center justify-center min-h-[36px] px-3 py-1 rounded-lg text-xs font-medium text-white/40 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-colors flex-shrink-0"
+                  >
+                    Cancel
+                  </button>
+                )}
               </motion.div>
             )}
 
@@ -1447,6 +1457,12 @@ export default function PageClient() {
                   Open Vana approval
                   <ExternalLink className="w-4 h-4" />
                 </a>
+                <button
+                  onClick={cancelConnect}
+                  className="inline-flex items-center justify-center min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-medium text-white/40 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-colors ml-3"
+                >
+                  Cancel
+                </button>
               </motion.div>
             )}
 
@@ -1464,6 +1480,12 @@ export default function PageClient() {
                   Approve access in the Vana window.{" "}
                   <strong>Keep both tabs open</strong> until it says connected.
                 </p>
+                <button
+                  onClick={cancelConnect}
+                  className="inline-flex items-center justify-center min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-medium text-white/40 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-colors mt-3"
+                >
+                  Cancel
+                </button>
               </motion.div>
             )}
 

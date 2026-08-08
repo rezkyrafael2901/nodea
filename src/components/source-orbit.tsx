@@ -18,13 +18,13 @@ type OrbitSource = {
 };
 
 const ORBIT_SOURCES: OrbitSource[] = [
-  { id: "github", radius: 0.4, size: 40, duration: 16, startAngle: 0 },
-  { id: "spotify", radius: 0.3, size: 34, duration: 12, startAngle: 60 },
-  { id: "instagram", radius: 0.43, size: 32, duration: 20, startAngle: 120, counter: true },
-  { id: "youtube", radius: 0.35, size: 32, duration: 14, startAngle: 180 },
-  { id: "chatgpt", radius: 0.27, size: 30, duration: 11, startAngle: 240, counter: true },
-  { id: "steam", radius: 0.37, size: 32, duration: 17, startAngle: 300 },
-  { id: "linkedin", radius: 0.49, size: 30, duration: 13, startAngle: 30 },
+  { id: "github", radius: 0.4, size: 40, duration: 30, startAngle: 0 },
+  { id: "spotify", radius: 0.3, size: 34, duration: 22, startAngle: 60 },
+  { id: "instagram", radius: 0.43, size: 32, duration: 36, startAngle: 120, counter: true },
+  { id: "youtube", radius: 0.35, size: 32, duration: 26, startAngle: 180 },
+  { id: "chatgpt", radius: 0.27, size: 30, duration: 20, startAngle: 240, counter: true },
+  { id: "steam", radius: 0.37, size: 32, duration: 32, startAngle: 300 },
+  { id: "linkedin", radius: 0.49, size: 30, duration: 24, startAngle: 30 },
 ];
 
 export function SourceOrbit({ size = 264 }: { size?: number }) {
@@ -57,7 +57,7 @@ export function SourceOrbit({ size = 264 }: { size?: number }) {
             height: size * r,
             left: (size - size * r) / 2,
             top: (size - size * r) / 2,
-            animation: `orbit-spin ${36 + i * 16}s linear infinite`,
+            animation: `orbit-spin ${60 + i * 24}s linear infinite`,
           }}
         >
           <div
