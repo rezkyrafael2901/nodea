@@ -1244,8 +1244,8 @@ export default function PageClient() {
               transition={{ delay: 0.55 }}
               className="mt-6 text-xs md:text-sm text-white/35 flex flex-wrap items-center justify-center gap-x-5 gap-y-2"
             >
-              <span className="inline-flex items-center gap-1.5"><Lock className="w-3.5 h-3.5" /> No wallet needed</span>
               <span className="inline-flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" /> We only read what you approve</span>
+              <span className="inline-flex items-center gap-1.5"><Lock className="w-3.5 h-3.5" /> No wallet needed</span>
               <span className="inline-flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5" /> Revoke anytime</span>
             </motion.p>
 
