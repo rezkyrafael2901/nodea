@@ -13,6 +13,7 @@ import { computeSoulScore, type SoulScoreResult, type ScoreComponent } from "@/l
 import { getTraits, getTopTrait, type Trait } from "@/lib/traits";
 import { type LeaderboardEntry } from "@/lib/rewards";
 import { DataSoulCard } from "@/components/data-soul-card";
+import InsightsPanel from "@/components/insights-panel";
 import { BrandIconTile, BrandIcon, type BrandId } from "@/components/brand-icons";
 import { AppLogo, AppWordmark } from "@/components/app-logo";
 import { SourceOrbit } from "@/components/source-orbit";
@@ -2111,6 +2112,12 @@ export default function PageClient() {
                         </motion.div>
                       </motion.div>
                     )}
+
+                    {/* Insights & Recommendations (hybrid engine) */}
+                    <InsightsPanel
+                      identities={identities.map((i) => ({ source: i.source, data: i.data }))}
+                      mode="auto"
+                    />
 
                     {/* Share Actions */}
                     <motion.div

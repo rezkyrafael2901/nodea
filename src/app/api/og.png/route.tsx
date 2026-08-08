@@ -249,7 +249,7 @@ export async function GET(request: Request) {
               Aesthetic: {aesthetic} • Built on Vana Network
             </div>
             <div style={{ fontSize: 13, color: "rgba(255,255,255,0.2)", display: "flex", gap: 4 }}>
-              nodea-app.vercel.app{ref ? ` · via ${ref}` : ""}
+              nodea.my.id{ref ? ` · via ${ref}` : ""}
             </div>
           </div>
         </div>

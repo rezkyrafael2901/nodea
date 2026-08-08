@@ -30,6 +30,33 @@ const MOCK_DATA: Record<string, Record<string, unknown>> = {
     },
     starredRepositories: { totalCount: 312, topics: ["ai", "web3", "rust", "design-systems"] },
   },
+  linkedin: {
+    profile: {
+      firstName: "Creative",
+      lastName: "Developer",
+      headline: "Senior Product Engineer | Team Lead",
+      location: "Jakarta, Indonesia",
+      connections: 843,
+      followers: 120,
+    },
+    experience: [
+      { title: "Senior Product Engineer", companyName: "TechCorp", startDate: "2021-01", endDate: null },
+      { title: "Full-stack Developer", companyName: "StartupX", startDate: "2018-06", endDate: "2020-12" },
+      { title: "Frontend Developer", companyName: "AgencyY", startDate: "2016-03", endDate: "2018-05" },
+    ],
+    education: [
+      { school: "Universitas Indonesia", degree: "Bachelor of Computer Science", endDate: "2016" },
+    ],
+    skills: [
+      { name: "TypeScript" },
+      { name: "React" },
+      { name: "System Design" },
+      { name: "Team Leadership" },
+      { name: "Product Strategy" },
+      { name: "Node.js" },
+      { name: "Cloud Architecture" },
+    ],
+  },
   instagram: {
     profile: {
       username: "@creativeuser",
