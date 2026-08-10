@@ -1339,15 +1339,6 @@ export default function PageClient() {
                 Connect your accounts
                 <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
               </motion.button>
-              <motion.button
-                whileHover={reducedMotion ? {} : { scale: 1.03, y: -1 }}
-                whileTap={reducedMotion ? {} : { scale: 0.97 }}
-                onClick={() => goView("standings")}
-                className="inline-flex items-center justify-center min-h-[44px] gap-2.5 px-7 py-3.5 rounded-2xl text-base font-semibold text-white/80 border border-white/[0.1] bg-white/[0.03] hover:bg-white/[0.06] hover:text-white transition-colors"
-              >
-                <Trophy className="w-5 h-5 text-amber-300" />
-                View leaderboard
-              </motion.button>
             </motion.div>
 
             {/* Trust row */}
