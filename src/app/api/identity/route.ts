@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
             "Content-Type": "application/json",
             ...(useOpenRouter
               ? {
-                  "HTTP-Referer": "https://nodea.my.id",
+                  "HTTP-Referer": "https://nodeahub.vercel.app",
                   "X-Title": "Nodea",
                 }
               : {}),

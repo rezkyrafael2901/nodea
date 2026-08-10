@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     const controller = createVanaController(sourceId, mode === "full" ? "full" : "web");
 
     // Create the access request with a return URL pointing back to our app
-    const baseUrl = process.env.VANA_APP_URL || "https://nodea.my.id";
+    const baseUrl = process.env.VANA_APP_URL || "https://nodeahub.vercel.app";
     const returnUrl = `${baseUrl}/connect/return?source=${sourceId}&mode=${mode}`;
 
     const request_data = await controller.createAccessRequest({ returnUrl });
