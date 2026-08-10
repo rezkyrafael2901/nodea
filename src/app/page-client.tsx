@@ -923,7 +923,7 @@ export default function PageClient() {
             <div className="flex items-center justify-between gap-2 text-xs text-emerald-400">
               <div className="flex items-center gap-2 min-w-0">
                 <Zap className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate">Contributing to your Soul Score</span>
+                <span className="truncate">Contributing to your Nodea Score</span>
               </div>
               <motion.button
                 type="button"
@@ -1423,12 +1423,15 @@ export default function PageClient() {
             className="relative mt-16 md:mt-24 scroll-mt-24"
           >
             <div className="text-center mb-4 max-w-2xl mx-auto">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.07] bg-white/[0.02] text-[11px] uppercase tracking-widest text-white/40 mb-4">
+                Example preview
+              </div>
               <h2 className="font-display-hero text-2xl md:text-3xl font-semibold tracking-tighter text-white">
                 See yourself in your data
               </h2>
               <p className="mt-3 text-white/45 text-sm leading-relaxed">
-                This is what Nodea reveals once you connect your accounts. No
-                questionnaire — your real activity, decoded into an identity card.
+                A sample identity card from demo data — connect your accounts to
+                see the story your real activity tells.
               </p>
             </div>
 
@@ -1644,7 +1647,7 @@ export default function PageClient() {
                         <button
                           onClick={() => openLinkCheck(source, isDesktopOnly || isHybrid ? "full" : "web")}
                           disabled={isBusy || isDisabledOnMobile}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/30 px-4 py-2 text-xs font-medium text-cyan-300 hover:bg-cyan-400/10 hover:border-cyan-400/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-cyan-400/30 px-4 py-2.5 text-sm font-medium text-cyan-300 hover:bg-cyan-400/10 hover:border-cyan-400/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                         >
                           <Link2 className="w-3.5 h-3.5" /> Connect
                           <ArrowUpRight className="w-3 h-3 opacity-60" />
@@ -2017,6 +2020,12 @@ export default function PageClient() {
                       transition={{ delay: 0.1 + i * 0.08, duration: 0.5 }}
                       className="p-5 rounded-2xl glass glass-border relative"
                     >
+                      {/* Connector arrow between steps (desktop) */}
+                      {i < 2 && (
+                        <div className="hidden md:flex absolute top-1/2 -right-4 z-10 -translate-y-1/2 items-center justify-center w-8 h-8 rounded-full bg-(--color-bg-elevated) border border-cyan-400/20 text-cyan-300/80">
+                          <ArrowRight className="w-4 h-4" />
+                        </div>
+                      )}
                       <div className="flex items-start gap-3">
                         <div className="shrink-0 w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
                           <step.icon className="w-5 h-5 text-cyan-300" />
@@ -2054,7 +2063,7 @@ export default function PageClient() {
                       What affects your score
                     </h2>
                     <p className="tracking-ui text-xs text-white/40 mt-0.5">
-                      Not a test. Five signals from the activity you actually have.
+                      Your score is built from five signals found across your connected accounts.
                     </p>
                   </div>
                 </div>
@@ -2087,8 +2096,7 @@ export default function PageClient() {
                     Your data shows us who you are
                   </h2>
                   <p className="mt-3 text-white/45 text-sm leading-relaxed">
-                    Most personality tests ask you to describe yourself. Nodea skips the prompts and
-                    reads the activity you've already left behind — then scores what it actually says.
+                    No questionnaires. Just evidence.
                   </p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-3xl mx-auto">
@@ -2106,8 +2114,8 @@ export default function PageClient() {
                       Traditional tests
                     </div>
                     <p className="text-sm text-white/50 leading-relaxed">
-                      Ask you to self-describe, then weight answers against a fixed model. Your score
-                      moves when you re-take it — not when you change.
+                      Self-described answers weighted against a fixed model. The score moves when you
+                      re-take it — not when you change.
                     </p>
                   </motion.div>
                   <motion.div
@@ -2124,8 +2132,8 @@ export default function PageClient() {
                       Nodea
                     </div>
                     <p className="text-sm text-white/50 leading-relaxed">
-                      Reads your actual activity once, then builds a profile from evidence — repos you
-                      wrote, tracks you played, posts you made. Your score changes only when you do.
+                      Reads real activity once and scores the evidence — repos you wrote, tracks you
+                      played, posts you made. Your score changes only when you do.
                     </p>
                   </motion.div>
                 </div>
@@ -2165,8 +2173,8 @@ export default function PageClient() {
                   <motion.div className="p-4 rounded-xl border border-white/[0.06] bg-white/[0.01]">
                     <h3 className="text-xs font-semibold text-white/50 mb-2">What we store</h3>
                     <ul className="space-y-1 text-xs text-white/45">
-                      <li>A hashed signature of the facts we extracted — never raw API data.</li>
-                      <li>Your Soul Score + identity in localStorage only (not sent anywhere).</li>
+                      <li>Only the facts you approve are read — raw API data is never stored.</li>
+                      <li>Your Nodea Score + identity in localStorage only (not sent anywhere).</li>
                       <li>On-chain persistence is yours to sign, and you can ignore it.</li>
                     </ul>
                   </motion.div>
@@ -2219,7 +2227,7 @@ export default function PageClient() {
                     },
                     {
                       q: "Is this anonymous?",
-                      a: "We never log your email, IP, or identity. All scoring runs in your browser; only a hashed signature of extracted facts ever leaves.",
+                      a: "We never log your email, IP, or identity. All scoring runs in your browser, and the extracted facts stay there too — nothing is stored on our servers.",
                     },
                     {
                       q: "Can I delete my data?",
@@ -2539,7 +2547,7 @@ export default function PageClient() {
                     </div>
                     <div>
                       <div className="font-medium text-white">Score Breakdown</div>
-                      <div className="tracking-ui text-[10px] text-white/35">How your Soul Score adds up</div>
+                      <div className="tracking-ui text-[10px] text-white/35">How your Nodea Score adds up</div>
                     </div>
                   </div>
                   <ScoreBreakdown components={soulScore.components} />
