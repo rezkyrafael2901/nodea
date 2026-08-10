@@ -1178,11 +1178,12 @@ export default function PageClient() {
           initial={{ y: -100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6, ease: easeOut }}
-          className={`sticky top-0 z-50 transition-all duration-300 ${
+          className={`sticky top-0 z-[70] transition-all duration-300 ${
             scrolled
               ? "border-b border-[#94A3B8]/10 bg-[#0B1222]/95 backdrop-blur-2xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.6)]"
               : "border-b border-transparent bg-transparent"
           }`}
+          style={{ position: "sticky", top: 0, zIndex: 70 }}
         >
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16 md:h-[72px]">
