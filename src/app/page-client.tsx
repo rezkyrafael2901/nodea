@@ -1234,7 +1234,7 @@ export default function PageClient() {
                     boxShadow: "0 2px 12px -4px rgba(59,130,246,0.5)",
                   }}
                 >
-                  Connect your data
+                  Connect
                   <ArrowRight className="w-4 h-4" />
                 </motion.button>
                 {/* Mobile hamburger */}
@@ -1283,7 +1283,7 @@ export default function PageClient() {
                       className="w-full mt-2 px-3 py-3 rounded-lg text-sm font-semibold text-white"
                       style={{ background: "linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%)" }}
                     >
-                      Connect your data
+                      Connect
                     </button>
                   </div>
                 </motion.nav>
