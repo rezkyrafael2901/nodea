@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B1222"/>
+      <stop offset="100%" stop-color="#111C33"/>
+    </linearGradient>
+    <linearGradient id="n1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#6EA8FF"/>
+      <stop offset="100%" stop-color="#4F8CFF"/>
+    </linearGradient>
+    <linearGradient id="n2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#00D4FF"/>
+      <stop offset="100%" stop-color="#00B8E6"/>
+    </linearGradient>
+    <linearGradient id="diag" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F8CFF"/>
+      <stop offset="100%" stop-color="#00D4FF"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00D4FF" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#4F8CFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="118" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="215" fill="url(#glow)"/>
+  <line x1="176" y1="128" x2="176" y2="384" stroke="url(#n1)" stroke-width="16" stroke-linecap="round" opacity="0.9"/>
+  <line x1="336" y1="128" x2="336" y2="384" stroke="url(#n2)" stroke-width="16" stroke-linecap="round" opacity="0.9"/>
+  <line x1="176" y1="128" x2="336" y2="384" stroke="url(#diag)" stroke-width="16" stroke-linecap="round" opacity="0.95"/>
+  <circle cx="176" cy="128" r="34" fill="url(#n1)"/>
+  <circle cx="176" cy="256" r="34" fill="url(#n1)"/>
+  <circle cx="176" cy="384" r="34" fill="url(#n1)"/>
+  <circle cx="336" cy="128" r="34" fill="url(#n2)"/>
+  <circle cx="336" cy="256" r="34" fill="url(#n2)"/>
+  <circle cx="336" cy="384" r="34" fill="url(#n2)"/>
+  <circle cx="164" cy="116" r="10" fill="#FFFFFF" opacity="0.92"/>
+  <circle cx="324" cy="116" r="10" fill="#FFFFFF" opacity="0.92"/>
+  <circle cx="256" cy="256" r="18" fill="#FFFFFF" opacity="0.96"/>
+  <circle cx="256" cy="256" r="8" fill="#E6FBFF"/>
+</svg>

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 500" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0B1222"/>
+      <stop offset="50%" stop-color="#101A30"/>
+      <stop offset="100%" stop-color="#0B1222"/>
+    </linearGradient>
+    <radialGradient id="glow1" cx="25%" cy="50%" r="35%">
+      <stop offset="0%" stop-color="#4F8CFF" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#4F8CFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="75%" cy="45%" r="35%">
+      <stop offset="0%" stop-color="#00D4FF" stop-opacity="0.24"/>
+      <stop offset="100%" stop-color="#00D4FF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="line1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#6EA8FF"/>
+      <stop offset="100%" stop-color="#4F8CFF"/>
+    </linearGradient>
+    <linearGradient id="line2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#00D4FF"/>
+      <stop offset="100%" stop-color="#00B8E6"/>
+    </linearGradient>
+  </defs>
+  <rect width="1500" height="500" fill="url(#bg)"/>
+  <rect width="1500" height="500" fill="url(#glow1)"/>
+  <rect width="1500" height="500" fill="url(#glow2)"/>
+  <g opacity="0.5">
+    <path d="M190 410H1310" stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="1"/>
+    <path d="M190 340H1310" stroke="#FFFFFF" stroke-opacity="0.05" stroke-width="1"/>
+    <path d="M190 270H1310" stroke="#FFFFFF" stroke-opacity="0.04" stroke-width="1"/>
+  </g>
+  <g transform="translate(150,95)">
+    <line x1="0" y1="0" x2="0" y2="220" stroke="url(#line1)" stroke-width="14" stroke-linecap="round"/>
+    <line x1="180" y1="0" x2="180" y2="220" stroke="url(#line2)" stroke-width="14" stroke-linecap="round"/>
+    <line x1="0" y1="0" x2="180" y2="220" stroke="#00D4FF" stroke-width="14" stroke-linecap="round" opacity="0.88"/>
+    <circle cx="0" cy="0" r="28" fill="url(#line1)"/>
+    <circle cx="0" cy="110" r="28" fill="url(#line1)"/>
+    <circle cx="0" cy="220" r="28" fill="url(#line1)"/>
+    <circle cx="180" cy="0" r="28" fill="url(#line2)"/>
+    <circle cx="180" cy="110" r="28" fill="url(#line2)"/>
+    <circle cx="180" cy="220" r="28" fill="url(#line2)"/>
+    <circle cx="0" cy="0" r="8" fill="#fff" opacity="0.9"/>
+    <circle cx="180" cy="0" r="8" fill="#fff" opacity="0.9"/>
+    <circle cx="90" cy="110" r="12" fill="#fff" opacity="0.95"/>
+  </g>
+  <text x="480" y="220" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="96" font-weight="700" letter-spacing="8">NODEA</text>
+  <text x="480" y="292" fill="#BFD3FF" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="500" letter-spacing="1.2">Meet yourself in your data.</text>
+</svg>

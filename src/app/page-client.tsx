@@ -1174,7 +1174,7 @@ export default function PageClient() {
 
       <div className="relative z-10">
         {/* ── Header (Framer-style nav) ── */}
-        <div className="sticky top-0 z-[70]" style={{ position: "sticky", top: 0, zIndex: 70 }}>
+        <div className="fixed top-0 left-0 right-0 z-[70]" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 70 }}>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
