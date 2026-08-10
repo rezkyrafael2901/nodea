@@ -1302,7 +1302,7 @@ export default function PageClient() {
             variants={sectionVariants}
             initial="initial"
             animate="animate"
-            className="relative text-center mb-20 md:mb-28 pt-10 md:pt-16"
+            className="relative text-center mb-20 md:mb-28 pt-16 md:pt-24"
           >
             <motion.h1
               initial={{ opacity: 0, y: 30 }}
