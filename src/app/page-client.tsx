@@ -1581,12 +1581,12 @@ export default function PageClient() {
                     transition={{ duration: 0.4 }}
                     className={`group flex h-full flex-col rounded-2xl border p-5 transition-all duration-300 ${
                       isConnected
-                        ? "border-emerald-500/20 bg-emerald-500/[0.03] hover:border-emerald-500/40"
+                        ? "border-emerald-500/25 bg-[var(--color-bg-card)] hover:border-emerald-500/45"
                         : isDisabledOnMobile
-                        ? "border-white/[0.04] bg-white/[0.01] opacity-50"
+                        ? "border-white/[0.06] bg-[var(--color-bg-card)] opacity-50"
                         : hasError
-                        ? "border-amber-500/30 bg-amber-500/[0.03] hover:border-amber-500/50"
-                        : "border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/[0.12]"
+                        ? "border-amber-500/30 bg-[var(--color-bg-card)] hover:border-amber-500/50"
+                        : "border-white/[0.08] bg-[var(--color-bg-card)] hover:bg-[var(--color-bg-card-hover)] hover:border-white/[0.15]"
                     }`}
                   >
                     <div className="flex items-start gap-3">
