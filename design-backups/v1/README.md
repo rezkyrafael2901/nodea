@@ -1,9 +1,13 @@
 # Nodea Design Backup — v1
 
-**Tanggal:** 10 Agustus 2026
-**Git commit:** `568885a8d43535a65aef946f15f3a5da8081eb74`
+**Tanggal:** 10 Agustus 2026 (updated 14:49 WITA)
+**Git commit:** `bf270de` (footer minimal)
 **Git tag:** `design-backup-v1`
 **Status:** LIVE di https://nodea.my.id
+
+> ⚠️ **UPDATE:** Backup v1 telah di-update ke design **sekarang** (footer minimal closing screen).
+> Design lama (footer multi-column, commit `568885a`) tetap aman di git history —
+> kalau butuh, bisa `git show 568885a:src/app/page-client.tsx > src/app/page-client.tsx`.
 
 ## Cara Restore
 
@@ -57,10 +61,12 @@ npx vercel deploy --token "$VERCEL_TOKEN" --prod --yes
   - Connected: badge `Connected` — emerald, CheckCircle icon
 - Satu connect jalan pada satu waktu (`connectingSource`)
 
-### 4. Footer (single-row)
-- Logo + "Nodea" + separator + "Built on Vana · Data you already own"
-- Kanan: "© 2026 Nodea. Built on Vana. / Your data, your rules."
-- **TIDAK ADA** multi-column (Product / Data sources / Powered by)
+### 4. Footer (minimal closing screen)
+- **Centered:** AppLogo (network-N, size 44)
+- Statement: **"Every connection tells a story."** (text-sm, white/45)
+- Credit: **"© 2026 Nodea · Built on Vana"** (text-xs, white/30)
+- Border-top `white/[0.05]`, bg `(--color-bg)`
+- **TIDAK ADA** link/sitemap/Vana Cup/tombol
 
 ### 5. Global
 - Scroll-to-top instant on mount
@@ -78,7 +84,12 @@ npx vercel deploy --token "$VERCEL_TOKEN" --prod --yes
 
 ## Catatan Penting
 - Backup ini = **git tag**, jadi restore = checkout dari tag. Bisa juga restore per-file.
-- Kalau ada fitur baru ditambah dan gak cocok, restore dari tag ini bakal balikin tampilan persis.
+- Tag `design-backup-v1` menunjuk ke commit **`bf270de`** (design minimal saat ini).
+- Design lama (footer multi-column) masih ada di git history — commit `568885a`:
+  ```bash
+  # Restore footer lama (multi-column) kalau perlu:
+  git show 568885a:src/app/page-client.tsx > src/app/page-client.tsx
+  ```
 - Jangan hapus tag `design-backup-v1` — itu sumber restore.
 - Buat backup baru (v2, dst) kalau design berubah lagi signifikan:
   ```bash
