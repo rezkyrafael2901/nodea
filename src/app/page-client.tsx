@@ -33,9 +33,7 @@ import {
   ChevronDown,
   Layers,
   Zap,
-  Crown,
-  Target,
-  Heart,
+  Home,
   Brain,
   Users,
   Menu,
@@ -53,7 +51,6 @@ import {
   Link2,
   Trophy,
   Star,
-  Home,
   Newspaper,
   CreditCard,
   TrendingUp,
@@ -145,15 +142,6 @@ const cardVariants: Variants = {
   }),
   hover: { y: -8, scale: 1.02, transition: { duration: 0.3, ease: easeOut } },
   tap: { scale: 0.98 },
-};
-
-const statVariants: Variants = {
-  initial: { opacity: 0, y: 10 },
-  animate: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: 0.3 + i * 0.1, duration: 0.6, ease: easeOut },
-  }),
 };
 
 const glowVariants = {
@@ -1361,44 +1349,6 @@ export default function PageClient() {
               className="mt-12 md:mt-14"
             >
               <SourceOrbit size={264} />
-            </motion.div>
-
-            {/* Live Stats Bar */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.45, duration: 0.7, ease: easeOut }}
-              className="mt-10 flex flex-wrap items-center justify-center gap-4 md:gap-8"
-            >
-              <motion.div variants={statVariants} className="flex items-center gap-3 px-5 py-3 rounded-2xl glass glass-border">
-                <div className="p-2 rounded-xl bg-blue-500/15">
-                  <Target className="w-5 h-5 text-blue-300" />
-                </div>
-                <div>
-                  <div className="font-mono font-semibold text-2xl md:text-3xl gradient-brand">{displayScore}</div>
-                  <div className="tracking-ui text-[10px] uppercase tracking-wider text-white/30">Soul Score</div>
-                </div>
-              </motion.div>
-              <motion.div variants={statVariants} className="flex items-center gap-3 px-5 py-3 rounded-2xl glass glass-border">
-                <div className="p-2 rounded-xl" style={{ background: `${gradeColor}20` }}>
-                  <Crown className="w-5 h-5" style={{ color: gradeColor }} />
-                </div>
-                <div>
-                  <div className="font-mono font-semibold text-2xl md:text-3xl" style={{ color: gradeColor }}>
-                    Grade {displayGrade}
-                  </div>
-                  <div className="tracking-ui text-[10px] uppercase tracking-wider text-white/30">{gradeLabel}</div>
-                </div>
-              </motion.div>
-              <motion.div variants={statVariants} className="flex items-center gap-3 px-5 py-3 rounded-2xl glass glass-border">
-                <div className="p-2 rounded-xl bg-cyan-500/15">
-                  <TrendingUp className="w-5 h-5 text-cyan-300" />
-                </div>
-                <div>
-                  <div className="font-mono font-semibold text-2xl md:text-3xl gradient-cyan-pink">{connectedCount}</div>
-                  <div className="tracking-ui text-[10px] uppercase tracking-wider text-white/30">Connected</div>
-                </div>
-              </motion.div>
             </motion.div>
 
             {/* Product window (Framer-style desktop mockup) */}
