@@ -1713,7 +1713,7 @@ export default function PageClient() {
           )}
 
           {view === "connect" && (
-            <>
+            <div className="pt-8 md:pt-12">
           {/* ── Status / Error / Referral ── */}
           <AnimatePresence mode="wait">
             {statusMessage && (
@@ -1980,7 +1980,7 @@ export default function PageClient() {
             </motion.div>
             {/* Grid close */}
           </motion.div>
-          </>
+          </div>
         )}
 
           {view === "home" && (
