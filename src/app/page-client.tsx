@@ -1579,16 +1579,23 @@ export default function PageClient() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.4 }}
-                    className={`group flex h-full flex-col rounded-2xl border p-5 transition-all duration-300 ${
+                    className={`group relative flex h-full flex-col rounded-2xl border p-5 transition-all duration-300 ${
                       isConnected
-                        ? "border-emerald-500/25 bg-[linear-gradient(135deg,rgba(79,140,255,0.14),rgba(0,212,255,0.14))] hover:border-emerald-500/45"
+                        ? "border-emerald-500/25 hover:border-emerald-500/45"
                         : isDisabledOnMobile
-                        ? "border-white/[0.06] bg-[linear-gradient(135deg,rgba(79,140,255,0.14),rgba(0,212,255,0.14))] opacity-50"
+                        ? "border-white/[0.08] opacity-50"
                         : hasError
-                        ? "border-amber-500/30 bg-[linear-gradient(135deg,rgba(79,140,255,0.14),rgba(0,212,255,0.14))] hover:border-amber-500/50"
-                        : "border-white/[0.08] bg-[linear-gradient(135deg,rgba(79,140,255,0.14),rgba(0,212,255,0.14))] hover:bg-[linear-gradient(135deg,rgba(79,140,255,0.22),rgba(0,212,255,0.22))] hover:border-white/[0.15]"
+                        ? "border-amber-500/30 hover:border-amber-500/50"
+                        : "border-white/[0.1] hover:border-white/[0.2]"
                     }`}
+                    style={{
+                      background:
+                        "linear-gradient(135deg, rgba(79,140,255,0.32) 0%, rgba(0,212,255,0.32) 100%)",
+                    }}
                   >
+                    {/* dark overlay to keep white text readable on the bright gradient */}
+                    <div className="absolute inset-0 rounded-2xl bg-[#0F172A]/70 transition-opacity duration-300 group-hover:opacity-60 pointer-events-none" />
+                    <div className="relative z-10 flex h-full flex-col">
                     <div className="flex items-start gap-3">
                       <BrandIconTile id={source.icon} size={36} />
                       <div className="min-w-0 flex-1 pt-0.5">
@@ -1653,6 +1660,7 @@ export default function PageClient() {
                           <ArrowUpRight className="w-3 h-3 opacity-60" />
                         </button>
                       )}
+                    </div>
                     </div>
                   </motion.div>
                 );
