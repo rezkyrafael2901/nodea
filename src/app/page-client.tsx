@@ -3034,7 +3034,7 @@ export default function PageClient() {
           </motion.div>
         </section>
 
-        {/* ── Footer (Framer-style multi-column) ── */}
+        {/* ── Footer (minimal closing screen) ── */}
         <motion.footer
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -3042,21 +3042,15 @@ export default function PageClient() {
           transition={{ duration: 0.5 }}
           className="border-t border-white/[0.05] bg-(--color-bg)"
         >
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-              <div className="flex items-center gap-3">
-                <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="flex items-center gap-2.5 min-h-[44px]" aria-label="Back to top">
-                  <AppLogo size={28} />
-                  <span className="font-display text-lg font-semibold tracking-tight text-white">Nodea</span>
-                </button>
-                <span className="hidden sm:inline-block h-4 w-px bg-white/[0.08]" />
-                <p className="text-sm text-white/35">
-                  Built on Vana · Data you already own
-                </p>
-              </div>
-              <div className="text-xs text-white/30">
-                © 2026 Nodea. Built on Vana. / Your data, your rules.
-              </div>
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
+            <div className="flex flex-col items-center text-center">
+              <AppLogo size={44} />
+              <p className="mt-5 text-sm text-white/45 leading-relaxed">
+                Every connection tells a story.
+              </p>
+              <p className="mt-3 text-xs text-white/30">
+                © 2026 Nodea · Built on Vana
+              </p>
             </div>
           </div>
         </motion.footer>
