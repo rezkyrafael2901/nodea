@@ -1581,12 +1581,12 @@ export default function PageClient() {
                     transition={{ duration: 0.4 }}
                     className={`group flex h-full flex-col rounded-2xl border p-5 transition-all duration-300 ${
                       isConnected
-                        ? "border-emerald-500/25 bg-[var(--color-bg-card)] hover:border-emerald-500/45"
+                        ? "border-emerald-500/25 bg-[linear-gradient(135deg,rgba(79,140,255,0.14),rgba(0,212,255,0.14))] hover:border-emerald-500/45"
                         : isDisabledOnMobile
-                        ? "border-white/[0.06] bg-[var(--color-bg-card)] opacity-50"
+                        ? "border-white/[0.06] bg-[linear-gradient(135deg,rgba(79,140,255,0.14),rgba(0,212,255,0.14))] opacity-50"
                         : hasError
-                        ? "border-amber-500/30 bg-[var(--color-bg-card)] hover:border-amber-500/50"
-                        : "border-white/[0.08] bg-[var(--color-bg-card)] hover:bg-[var(--color-bg-card-hover)] hover:border-white/[0.15]"
+                        ? "border-amber-500/30 bg-[linear-gradient(135deg,rgba(79,140,255,0.14),rgba(0,212,255,0.14))] hover:border-amber-500/50"
+                        : "border-white/[0.08] bg-[linear-gradient(135deg,rgba(79,140,255,0.14),rgba(0,212,255,0.14))] hover:bg-[linear-gradient(135deg,rgba(79,140,255,0.22),rgba(0,212,255,0.22))] hover:border-white/[0.15]"
                     }`}
                   >
                     <div className="flex items-start gap-3">
