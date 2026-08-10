@@ -1175,9 +1175,9 @@ export default function PageClient() {
       <div className="relative z-10">
         {/* ── Header (Framer-style nav) ── */}
         <div className="sticky top-0 z-[70]" style={{ position: "sticky", top: 0, zIndex: 70 }}>
-          <motion.header
-            initial={{ y: -100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={{ duration: 0.6, ease: easeOut }}
             className={`transition-all duration-300 ${
               scrolled
@@ -1290,7 +1290,7 @@ export default function PageClient() {
               )}
             </AnimatePresence>
           </div>
-        </motion.header>
+        </motion.div>
         </div>
 
         <main className={`mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ${view === "article" ? "py-0" : "py-12 md:py-20 lg:py-28"}`}>
