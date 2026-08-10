@@ -30,6 +30,7 @@ import {
   Eye,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
   Layers,
   Zap,
   Crown,
@@ -52,8 +53,6 @@ import {
   Link2,
   Trophy,
   Star,
-  Sun,
-  Moon,
   Home,
   Newspaper,
   CreditCard,
@@ -65,7 +64,15 @@ import {
   Link,
   ArrowRight,
   BookOpen,
+  Trash2,
+  HelpCircle,
+  FileText,
+  ShieldCheck,
 } from "lucide-react";
+
+// Pure, client-safe recommendation engine (no LLM side-effects on the client).
+import { getRecommendationsSync, buildIdentityCard, type IdentityCard } from "@/lib/recommendations/engine";
+import mockData from "@/app/api/vana/data/mock-data";
 
 type ConnectState =
   | "idle"
@@ -177,6 +184,10 @@ export default function PageClient() {
   const popupRef = useRef<Window | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Per-platform connect state for home cards
+  const [connectingSource, setConnectingSource] = useState<string | null>(null);
+  const [connectErrors, setConnectErrors] = useState<Record<string, string>>({});
+
   // Pre-flight profile-link check modal
   const [checkOpen, setCheckOpen] = useState(false);
   const [checkSource, setCheckSource] = useState<DataSource | null>(null);
@@ -198,22 +209,11 @@ export default function PageClient() {
 
   const [refFrom, setRefFrom] = useState<string | null>(null);
   const [navOpen, setNavOpen] = useState(false);
-  // ── Theme (dark/light) ──
-  const [theme, setTheme] = useState<"dark" | "light">(() => {
-    if (typeof window !== "undefined") {
-      const saved = window.localStorage.getItem("nodea-theme");
-      if (saved === "light" || saved === "dark") return saved;
-    }
-    return "dark";
-  });
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    try { window.localStorage.setItem("nodea-theme", theme); } catch {}
-  }, [theme]);
 
   // ── Tab-based navigation (Patina-style bottom nav) ──
   type ViewKey = "home" | "article" | "connect" | "card" | "standings";
   const [view, setView] = useState<ViewKey>("home");
+  const [expandedFaq, setExpandedFaq] = useState<string | null>(null);
 
   const goView = useCallback((v: ViewKey, anchor?: string) => {
     setNavOpen(false);
@@ -236,6 +236,13 @@ export default function PageClient() {
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Scroll top instantly on mount
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
   }, []);
 
   // ── Leaderboard (real Vana Cup standings) ──
@@ -294,6 +301,50 @@ export default function PageClient() {
     const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  // Restore persisted connections on mount so a refresh doesn't wipe the mirror.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem("nodea:identities");
+      if (raw) {
+        const list = JSON.parse(raw) as IdentityData[];
+        if (Array.isArray(list) && list.length) {
+          setIdentities(list);
+          setOnboardedSources(new Set(list.map((i) => i.source)));
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Keep connections durable in localStorage as they change.
+  const persistIdentities = (list: IdentityData[]) => {
+    try {
+      window.localStorage.setItem("nodea:identities", JSON.stringify(list));
+    } catch (e) {
+      // QuotaExceeded on very large histories — keep onboarded flag in memory only.
+      if (e instanceof DOMException && e.name === "QuotaExceededError") {
+        try { window.localStorage.removeItem("nodea:identities"); } catch {}
+        try { window.localStorage.setItem("nodea:onboarded", JSON.stringify([...list.map((i) => i.source)])); } catch {}
+      }
+    }
+  };
+  useEffect(() => { persistIdentities(identities); }, [identities]);
+
+  // Remove a source from the mirror — data, score, and persisted state.
+  const disconnectSource = useCallback((sourceId: string) => {
+    setOnboardedSources((prev) => {
+      const next = new Set(prev);
+      next.delete(sourceId);
+      try { window.localStorage.setItem("nodea:onboarded", JSON.stringify([...next])); } catch {}
+      return next;
+    });
+    setIdentities((prev) => {
+      const next = prev.filter((i) => i.source !== sourceId);
+      try { window.localStorage.setItem("nodea:identities", JSON.stringify(next)); } catch {}
+      return next;
+    });
   }, []);
 
   // Animate score/grade changes
@@ -646,6 +697,35 @@ export default function PageClient() {
     setError("");
   };
 
+  // Per-platform connect from home cards — reuses the real OAuth flow
+  const handleHomeConnect = async (source: DataSource, mode: "web" | "full" = "web") => {
+    if (connectingSource !== null) return; // one at a time
+    setConnectingSource(source.id);
+    setConnectErrors((prev) => {
+      const next = { ...prev };
+      delete next[source.id];
+      return next;
+    });
+    setError("");
+    try {
+      await handleConnect(source, mode);
+      // After successful request/poll, clear connecting state
+      if (connectState === "error") {
+        setConnectErrors((prev) => ({ ...prev, [source.id]: "Connection failed" }));
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Connection failed";
+      setConnectErrors((prev) => ({ ...prev, [source.id]: msg }));
+    } finally {
+      setConnectingSource(null);
+    }
+  };
+
+  const handleHomeCancel = () => {
+    cancelConnect();
+    setConnectingSource(null);
+  };
+
   // ── Generate Card ──
   const handleGenerate = async () => {
     if (identities.length === 0) {
@@ -918,10 +998,22 @@ export default function PageClient() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-4 pt-4 border-t border-emerald-500/10 flex items-center gap-2 text-xs text-emerald-400"
+            className="mt-4 pt-4 border-t border-emerald-500/10 flex items-center justify-between text-xs text-emerald-400"
           >
-            <Zap className="w-3.5 h-3.5" />
-            <span>Contributing to your Soul Score</span>
+            <div className="flex items-center gap-2">
+              <Zap className="w-3.5 h-3.5" />
+              <span>Contributing to your Soul Score</span>
+            </div>
+            <motion.button
+              type="button"
+              whileHover={reducedMotion ? {} : { scale: 1.04 }}
+              whileTap={reducedMotion ? {} : { scale: 0.95 }}
+              onClick={() => disconnectSource(source.id)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-rose-300 hover:text-rose-200 hover:bg-rose-500/10 border border-rose-500/20 hover:border-rose-500/30 transition-colors"
+              title={`Disconnect ${source.name} — remove its data from your mirror`}
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Disconnect
+            </motion.button>
           </motion.div>
         )}
       </motion.div>
@@ -1012,6 +1104,24 @@ export default function PageClient() {
   const gradeColor = GRADE_COLORS[displayGrade] || GRADE_COLORS.D;
   const gradeLabel = GRADE_LABELS[displayGrade] || GRADE_LABELS.D;
 
+  // ── Your Mirror preview — deterministic example built from the same mock
+  //    data the engine uses in dev, so first-time visitors see a real card. ──
+  const mirror = useMemo(() => {
+    const picks = ["github", "spotify", "instagram"] as const;
+    const ids: IdentityData[] = picks.map((sid) => {
+      const data = mockData(sid);
+      return { source: sid, data, raw: [data] };
+    });
+    const recs = picks.map((sid) => ({
+      source: sid,
+      insights: getRecommendationsSync({ sourceId: sid, ...mockData(sid) }).insights,
+    }));
+    return {
+      card: buildIdentityCard(recs),
+      score: computeSoulScore(ids),
+    };
+  }, []);
+
   return (
     <motion.div
       initial="initial"
@@ -1065,7 +1175,7 @@ export default function PageClient() {
           transition={{ duration: 0.6, ease: easeOut }}
           className={`sticky top-0 z-50 transition-all duration-300 ${
             scrolled
-              ? "border-b border-white/[0.06] bg-(--color-bg)/85 backdrop-blur-2xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.6)]"
+              ? "border-b border-[#94A3B8]/10 bg-[#0B1222]/95 backdrop-blur-2xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.6)]"
               : "border-b border-transparent bg-transparent"
           }`}
         >
@@ -1089,7 +1199,11 @@ export default function PageClient() {
                   <button
                     key={item.label}
                     onClick={() => goView(item.v as ViewKey, item.anchor)}
-                    className="px-3.5 py-2 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/[0.05] transition-colors font-medium min-h-[44px] inline-flex items-center"
+                    className={`px-3.5 py-2 rounded-lg text-sm font-medium min-h-[44px] inline-flex items-center transition-colors ${
+                      view === item.v
+                        ? "text-[#38BDF8] bg-[#38BDF8]/10"
+                        : "text-[#94A3B8] hover:text-[#E2E8F0] hover:bg-white/[0.04]"
+                    }`}
                   >
                     {item.label}
                   </button>
@@ -1108,28 +1222,19 @@ export default function PageClient() {
                   whileHover={reducedMotion ? {} : { scale: 1.03, y: -1 }}
                   whileTap={reducedMotion ? {} : { scale: 0.97 }}
                   onClick={() => goView("connect")}
-                  className="hidden sm:inline-flex items-center justify-center min-h-[44px] gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-shadow duration-300"
+                  className="hidden sm:inline-flex items-center justify-center min-h-[40px] gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-shadow duration-300"
                   style={{
-                    background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)",
-                    boxShadow: "0 0 24px -6px rgba(79,140,255,0.55)",
+                    background: "linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%)",
+                    boxShadow: "0 2px 12px -4px rgba(59,130,246,0.5)",
                   }}
                 >
                   Connect your data
                   <ArrowRight className="w-4 h-4" />
                 </motion.button>
-                {/* Theme toggle */}
-                <button
-                  onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
-                  className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white/80 hover:text-white hover:bg-white/[0.08] transition-colors"
-                  aria-label="Toggle light / dark theme"
-                  title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-                >
-                  {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-                </button>
                 {/* Mobile hamburger */}
                 <button
                   onClick={() => setNavOpen((v) => !v)}
-                  className="md:hidden inline-flex items-center justify-center w-11 h-11 rounded-xl bg-white/[0.04] border border-white/[0.08]"
+                  className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] transition-colors"
                   aria-label="Menu"
                 >
                   {navOpen ? <X className="w-5 h-5 text-white/80" /> : <Menu className="w-5 h-5 text-white/80" />}
@@ -1147,7 +1252,7 @@ export default function PageClient() {
                   transition={{ duration: 0.25, ease: easeOut }}
                   className="md:hidden overflow-hidden"
                 >
-                  <div className="py-3 space-y-1 border-t border-white/[0.06]">
+                  <div className="py-3 space-y-1 border-t border-[#94A3B8]/10 bg-[#0B1222]/95">
                     {[
                       { v: "connect", label: "Connect" },
                       { v: "home", label: "How it works", anchor: "how" },
@@ -1158,7 +1263,11 @@ export default function PageClient() {
                       <button
                         key={item.label}
                         onClick={() => goView(item.v as ViewKey, item.anchor)}
-                        className="w-full text-left px-3 py-3 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/[0.05] transition-colors font-medium"
+                        className={`w-full text-left px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
+                          view === item.v
+                            ? "text-[#38BDF8] bg-[#38BDF8]/10"
+                            : "text-[#94A3B8] hover:text-[#E2E8F0] hover:bg-white/[0.04]"
+                        }`}
                       >
                         {item.label}
                       </button>
@@ -1166,7 +1275,7 @@ export default function PageClient() {
                     <button
                       onClick={() => goView("connect")}
                       className="w-full mt-2 px-3 py-3 rounded-lg text-sm font-semibold text-white"
-                      style={{ background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)" }}
+                      style={{ background: "linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%)" }}
                     >
                       Connect your data
                     </button>
@@ -1194,9 +1303,9 @@ export default function PageClient() {
               transition={{ delay: 0.2, duration: 0.7, ease: easeOut }}
               className="font-display-hero text-5xl md:text-7xl lg:text-[5.2rem] font-semibold tracking-tighter leading-[1.02] mb-6"
             >
-              <span className="gradient-white">What your data</span>
+              <span className="gradient-white">You're more interesting</span>
               <br />
-              <span className="gradient-brand">says about you.</span>
+              <span className="gradient-brand">than your bio.</span>
             </motion.h1>
 
             <motion.p
@@ -1253,7 +1362,7 @@ export default function PageClient() {
               <span className="inline-flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5" /> Revoke anytime</span>
             </motion.p>
 
-            {/* Source orbit — "What your data says about you." visual */}
+            {/* Source orbit — "You're more interesting than your bio." visual */}
             <motion.div
               initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -1335,9 +1444,7 @@ export default function PageClient() {
                       <span className="text-[11px] text-white/60">{src.name}</span>
                       {onboardedSources.has(src.id) ? (
                         <CheckCircle className="w-4 h-4 text-emerald-400" />
-                      ) : (
-                        <span className="text-[10px] text-white/30">+ Connect</span>
-                      )}
+                      ) : null}
                     </motion.div>
                   ))}
                 </div>
@@ -1345,6 +1452,211 @@ export default function PageClient() {
               {/* glow under window */}
               <div className="absolute -inset-x-10 -bottom-10 h-24 bg-gradient-to-r from-blue-600/20 via-cyan-600/20 to-blue-500/20 blur-3xl -z-10" />
             </motion.div>
+          </motion.section>
+
+          {/* ── Your Mirror — example preview (built from the same engine that
+              powers your real card, shown before you connect anything) ── */}
+          <motion.section
+            id="mirror-preview"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.6 }}
+            className="relative mt-16 md:mt-24 scroll-mt-24"
+          >
+            <div className="text-center mb-4 max-w-2xl mx-auto">
+              <h2 className="font-display-hero text-2xl md:text-3xl font-semibold tracking-tighter text-white">
+                See yourself in your data
+              </h2>
+              <p className="mt-3 text-white/45 text-sm leading-relaxed">
+                This is what Nodea reveals once you connect your accounts. No
+                questionnaire — your real activity, decoded into an identity card.
+              </p>
+            </div>
+
+            {mirror.card ? (
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1, duration: 0.5 }}
+                className="grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-4xl mx-auto"
+              >
+                {/* Score tile */}
+                <motion.div
+                  className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 glass glass-border"
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.15, duration: 0.5 }}
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 rounded-xl bg-blue-500/15">
+                      <BarChart2 className="w-5 h-5 text-blue-300" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-white">Your Nodea Score</div>
+                      <div className="tracking-ui text-[10px] uppercase tracking-wider text-white/35">
+                        Built from connected activity, not answers
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-3 rounded-xl bg-white/[0.03] border border-white/[0.05]">
+                      <div className="font-display font-semibold text-3xl text-white">{mirror.score.total}</div>
+                      <div className="text-[10px] uppercase tracking-wider text-white/35">out of 100</div>
+                    </div>
+                    <div className="text-center p-3 rounded-xl bg-white/[0.03] border border-white/[0.05]">
+                      <div className="font-display font-semibold text-3xl" style={{ color: gradeColor }}>
+                        Grade {mirror.score.grade}
+                      </div>
+                      <div className="text-[10px] uppercase tracking-wider text-white/35">{gradeLabel}</div>
+                    </div>
+                  </div>
+                  <div className="mt-4 text-xs text-white/40 leading-relaxed">{mirror.score.verdict}</div>
+                </motion.div>
+
+                {/* Identity card preview */}
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.2, duration: 0.5 }}
+                  className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 glass glass-border flex flex-col"
+                >
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <span className="text-2xl">{mirror.card.primaryArchetype.emoji}</span>
+                    <h3 className="font-display text-lg font-semibold text-white">
+                      {mirror.card.primaryArchetype.title}
+                    </h3>
+                  </div>
+                  <p className="text-cyan-300 font-medium text-sm mb-2">
+                    {mirror.card.primaryArchetype.tagline}
+                  </p>
+                  <p className="text-xs text-white/50 leading-relaxed flex-1">
+                    {mirror.card.primaryArchetype.fitRationale}
+                  </p>
+                  {mirror.card.alternatives.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-white/[0.06] space-y-1">
+                      <div className="text-[10px] uppercase tracking-wider text-white/35">
+                        Also fits
+                      </div>
+                      {mirror.card.alternatives.map((a) => (
+                        <div key={a.title} className="flex items-center gap-1.5 text-xs text-white/55">
+                          <span>{a.emoji}</span>
+                          <span>{a.title}</span>
+                          <span className="text-white/25">· {a.source}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+              </motion.div>
+            ) : (
+              <div className="text-center py-8 text-white/40 text-sm max-w-md mx-auto">
+                Connect any account to generate your real mirror. While you read this,
+                your pattern is already waiting behind the connect button.
+              </div>
+            )}
+
+            <div className="mt-8 text-center">
+              <motion.button
+                whileHover={reducedMotion ? {} : { scale: 1.02, y: -1 }}
+                whileTap={reducedMotion ? {} : { scale: 0.98 }}
+                onClick={() => goView("connect")}
+                className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium text-white transition-all"
+                style={{
+                  background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)",
+                  boxShadow: "0 0 20px -4px rgba(79,140,255,0.5)",
+                }}
+              >
+                Build your real mirror
+                <ArrowRight className="w-4 h-4" />
+              </motion.button>
+            </div>
+          </motion.section>
+
+          {/* ── What you'll get — per-source output preview ── */}
+          <motion.section
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.6 }}
+            className="relative mt-20 md:mt-28 scroll-mt-24"
+          >
+            <div className="text-center mb-10">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.07] bg-white/[0.02] text-[11px] uppercase tracking-widest text-white/40 mb-4">
+                What you'll get
+              </div>
+              <h2 className="font-display-hero text-3xl md:text-5xl font-semibold tracking-tighter text-white">
+                Every source tells a <span className="gradient-brand">different story</span>
+              </h2>
+              <p className="mt-4 text-white/45 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
+                Connect a platform and Nodea reads your real activity — here's the kind of insights you'll see on your card.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
+              {DATA_SOURCES.map((source) => {
+                const isConnecting = connectingSource === source.id;
+                const hasError = !!connectErrors[source.id];
+                const isConnected = onboardedSources.has(source.id);
+                const isBusy = connectingSource !== null;
+                return (
+                <motion.div
+                  key={source.id}
+                  initial={{ opacity: 0, y: 16 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.4 }}
+                  className="group rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 hover:bg-white/[0.04] hover:border-white/[0.12] transition-all duration-300"
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <BrandIconTile id={source.icon} size={36} />
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-medium text-white text-sm truncate flex items-center gap-2">
+                        {source.name}
+                      </h3>
+                      <p className="text-[11px] text-cyan-300/80 truncate font-medium">{source.dna}</p>
+                      <p className="text-[11px] text-white/40 truncate">{source.description}</p>
+                    </div>
+                    <div className="flex-shrink-0">
+                      {isConnected ? (
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-400">
+                          <CheckCircle className="w-3.5 h-3.5" /> Connected
+                        </span>
+                      ) : isConnecting ? (
+                        <button
+                          onClick={handleHomeCancel}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-red-400 border border-red-500/30 hover:bg-red-500/10 transition-colors"
+                        >
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Cancel
+                        </button>
+                      ) : hasError ? (
+                        <button
+                          onClick={() => handleHomeConnect(source, "web")}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-amber-400 border border-amber-500/30 hover:bg-amber-500/10 transition-colors"
+                        >
+                          <AlertCircle className="w-3.5 h-3.5" /> Try again
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleHomeConnect(source, "web")}
+                          disabled={isBusy}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-cyan-300 border border-cyan-400/30 hover:bg-cyan-400/10 hover:border-cyan-400/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <Link2 className="w-3.5 h-3.5" /> Connect
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-[13px] text-white/55 leading-relaxed">
+                    {source.outputSummary}
+                  </p>
+                </motion.div>
+                );
+              })}
+            </div>
           </motion.section>
 
           {/* ── Intro — What is Nodea (project introduction) ── */}
@@ -1719,6 +2031,277 @@ export default function PageClient() {
                       </div>
                     </motion.div>
                   ))}
+                </div>
+              </motion.section>
+            </>
+          )}
+
+          {view === "home" && (
+            <>
+              {/* ── What affects your score (teaches the 5 components) ── */}
+              <motion.section
+                id="score-explainer"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ duration: 0.6 }}
+                className="mt-16 scroll-mt-24"
+              >
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="font-display w-10 h-10 rounded-2xl bg-cyan-500/15 border border-cyan-500/20 flex items-center justify-center text-sm font-semibold text-cyan-300">
+                    <BarChart2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="font-display text-lg font-semibold tracking-tight leading-tight">
+                      What affects your score
+                    </h2>
+                    <p className="tracking-ui text-xs text-white/40 mt-0.5">
+                      Not a test. Five signals from the activity you actually have.
+                    </p>
+                  </div>
+                </div>
+                <div className="p-5 rounded-2xl glass glass-border">
+                  <ScoreBreakdown components={soulScore?.components ?? computeSoulScore([]).components} />
+                  {soulScore?.tips && soulScore.tips.length > 0 && (
+                    <div className="mt-5 pt-4 border-t border-white/[0.06] space-y-1">
+                      {soulScore.tips.map((tip, i) => (
+                        <div key={i} className="flex items-start gap-2 text-xs text-white/55">
+                          <span className="text-cyan-300 mt-0.5">•</span>
+                          <span>{tip}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.section>
+
+              {/* ── Why Nodea (vs traditional personality tests) ── */}
+              <motion.section
+                id="why-nodea"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ delay: 0.1, duration: 0.6 }}
+                className="mt-16 scroll-mt-24"
+              >
+                <div className="text-center mb-10 max-w-2xl mx-auto">
+                  <h2 className="font-display-hero text-2xl md:text-3xl font-semibold tracking-tighter text-white">
+                    Your data shows us who you are
+                  </h2>
+                  <p className="mt-3 text-white/45 text-sm leading-relaxed">
+                    Most personality tests ask you to describe yourself. Nodea skips the prompts and
+                    reads the activity you've already left behind — then scores what it actually says.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-3xl mx-auto">
+                  <motion.div
+                    className="rounded-2xl border border-rose-500/20 bg-rose-500/[0.03] p-5 glass glass-border"
+                    initial={{ opacity: 0, x: -16 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.1, duration: 0.5 }}
+                  >
+                    <div className="flex items-center gap-2 mb-2 text-sm font-medium text-rose-300">
+                      <div className="p-1.5 rounded-lg bg-rose-500/15">
+                        <HelpCircle className="w-4 h-4 text-rose-300" />
+                      </div>
+                      Traditional tests
+                    </div>
+                    <p className="text-sm text-white/50 leading-relaxed">
+                      Ask you to self-describe, then weight answers against a fixed model. Your score
+                      moves when you re-take it — not when you change.
+                    </p>
+                  </motion.div>
+                  <motion.div
+                    className="rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.03] p-5 glass glass-border"
+                    initial={{ opacity: 0, x: 16 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.2, duration: 0.5 }}
+                  >
+                    <div className="flex items-center gap-2 mb-2 text-sm font-medium text-cyan-300">
+                      <div className="p-1.5 rounded-lg bg-cyan-500/15">
+                        <FileText className="w-4 h-4 text-cyan-300" />
+                      </div>
+                      Nodea
+                    </div>
+                    <p className="text-sm text-white/50 leading-relaxed">
+                      Reads your actual activity once, then builds a profile from evidence — repos you
+                      wrote, tracks you played, posts you made. Your score changes only when you do.
+                    </p>
+                  </motion.div>
+                </div>
+              </motion.section>
+
+              {/* ── Privacy & data transparency ── */}
+              <motion.section
+                id="privacy"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ delay: 0.15, duration: 0.6 }}
+                className="mt-16 scroll-mt-24"
+              >
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="font-display w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center text-sm font-semibold text-emerald-300">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="font-display text-lg font-semibold tracking-tight leading-tight">
+                      Privacy first
+                    </h2>
+                    <p className="tracking-ui text-xs text-white/40 mt-0.5">
+                      You approve exactly what we read, and you keep the keys.
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <motion.div className="p-4 rounded-xl border border-white/[0.06] bg-white/[0.01]">
+                    <h3 className="text-xs font-semibold text-white/50 mb-2">What we read</h3>
+                    <ul className="space-y-1 text-xs text-white/45">
+                      <li>Only the scopes you approve in Vana Desktop.</li>
+                      <li>Profile, public posts, followers, activity history.</li>
+                      <li>We read it once per connection — never on a schedule.</li>
+                    </ul>
+                  </motion.div>
+                  <motion.div className="p-4 rounded-xl border border-white/[0.06] bg-white/[0.01]">
+                    <h3 className="text-xs font-semibold text-white/50 mb-2">What we store</h3>
+                    <ul className="space-y-1 text-xs text-white/45">
+                      <li>A hashed signature of the facts we extracted — never raw API data.</li>
+                      <li>Your Soul Score + identity in localStorage only (not sent anywhere).</li>
+                      <li>On-chain persistence is yours to sign, and you can ignore it.</li>
+                    </ul>
+                  </motion.div>
+                  <motion.div className="p-4 rounded-xl border border-white/[0.06] bg-white/[0.01]">
+                    <h3 className="text-xs font-semibold text-white/50 mb-2">What we don't access</h3>
+                    <ul className="space-y-1 text-xs text-white/45">
+                      <li>Private messages, DMs, and password-protected data.</li>
+                      <li>Your Vana account password or credentials.</li>
+                      <li>Third-party tokens beyond the approved OAuth scopes.</li>
+                    </ul>
+                  </motion.div>
+                  <motion.div className="p-4 rounded-xl border border-white/[0.06] bg-white/[0.01]">
+                    <h3 className="text-xs font-semibold text-white/50 mb-2">Delete or revoke</h3>
+                    <ul className="space-y-1 text-xs text-white/45">
+                      <li>Disconnect any source anytime — its data leaves your mirror immediately.</li>
+                      <li>Clear localStorage ("Forget my mirror") to wipe the score.</li>
+                      <li>Revoke the Vana OAuth grant from your account to remove access at the source.</li>
+                    </ul>
+                  </motion.div>
+                </div>
+              </motion.section>
+
+              {/* ── FAQ ── */}
+              <motion.section
+                id="faq"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ delay: 0.2, duration: 0.6 }}
+                className="mt-16 scroll-mt-24"
+              >
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="font-display w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/20 flex items-center justify-center text-sm font-semibold text-amber-300">
+                    <HelpCircle className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="font-display text-lg font-semibold tracking-tight leading-tight">
+                      Questions
+                    </h2>
+                    <p className="tracking-ui text-xs text-white/40 mt-0.5">
+                      Straight answers, no legalese.
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {[
+                    {
+                      q: "Do I need a wallet?",
+                      a: "No. Connect with a normal OAuth login. Your Nodea Score stays in your browser until you choose to sign it on-chain.",
+                    },
+                    {
+                      q: "Is this anonymous?",
+                      a: "We never log your email, IP, or identity. All scoring runs in your browser; only a hashed signature of extracted facts ever leaves.",
+                    },
+                    {
+                      q: "Can I delete my data?",
+                      a: "Yes. Disconnect any source, or clear browser storage with 'Forget my mirror'. If you signed on-chain, you keep the keys and can ignore us forever.",
+                    },
+                    {
+                      q: "Why does some data require Vana Desktop?",
+                      a: "A few sources (Steam games, YouTube history, ChatGPT conversations) are only exposed via a desktop OAuth flow. Install once, connect, and come back here — no wallet needed.",
+                    },
+                    {
+                      q: "How is my score calculated?",
+                      a: "From five signals — Age, Corroboration, Depth, Standing, Breadth — all derived from the activity you actually have. See 'What affects your score'.",
+                    },
+                    {
+                      q: "Why connect more than one source?",
+                      a: "More sources let us cross-check your pattern (Corroboration) and surface richer insights — e.g. your GitHub streak + Spotify taste together describe a different person than either alone.",
+                    },
+                    {
+                      q: "Is this a personality test?",
+                      a: "Not a questionnaire-based one. Nodea scores who you already are, from what you've already done — not how you describe yourself.",
+                    },
+                    {
+                      q: "What does the on-chain registration do?",
+                      a: "It anchors your Score + identity card to your wallet so other apps can verify them without you reconnecting your accounts. Opt-in, revocable, not required to use Nodea.",
+                    },
+                    {
+                      q: "Is my score 'real' / comparable?",
+                      a: "Your raw score is personal. The grade (S–D) and relative rank on the Vana Cup leaderboard are what we compare across users.",
+                    },
+                  ].map((item, i) => {
+                    const open = expandedFaq === item.q;
+                    return (
+                      <motion.div
+                        key={item.q}
+                        initial={{ opacity: 0, y: 8 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.03 * i, duration: 0.4 }}
+                        className="rounded-xl border border-white/[0.06] bg-white/[0.01] overflow-hidden"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setExpandedFaq(open ? null : item.q)}
+                          className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-white hover:text-white/90 transition-colors"
+                        >
+                          <span>{item.q}</span>
+                          <motion.span
+                            animate={{ rotate: open ? 180 : 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="text-white/40"
+                          >
+                            <ChevronDown className="w-4 h-4" />
+                          </motion.span>
+                        </button>
+                        <motion.div
+                          initial={open ? { height: 0, opacity: 0 } : { height: 0, opacity: 0 }}
+                          animate={open ? { height: "auto", opacity: 1 } : { height: 0, opacity: 0 }}
+                          transition={{ duration: 0.25, ease: "easeOut" }}
+                          className="overflow-hidden"
+                        >
+                          <p className="px-4 py-3 text-sm text-white/55 leading-relaxed">{item.a}</p>
+                        </motion.div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+                <div className="mt-6 text-center">
+                  <motion.button
+                    whileHover={reducedMotion ? {} : { scale: 1.02, y: -1 }}
+                    whileTap={reducedMotion ? {} : { scale: 0.98 }}
+                    onClick={() => goView("connect")}
+                    className="inline-flex items-center justify-center gap-2 px-5 py-2 rounded-xl text-sm font-medium text-white transition-all"
+                    style={{
+                      background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)",
+                      boxShadow: "0 0 20px -4px rgba(79,140,255,0.5)",
+                    }}
+                  >
+                    Build your real mirror
+                    <ArrowRight className="w-4 h-4" />
+                  </motion.button>
                 </div>
               </motion.section>
             </>
@@ -2462,75 +3045,19 @@ export default function PageClient() {
           className="border-t border-white/[0.05] bg-(--color-bg)"
         >
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14">
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-[1.5fr_1fr_1fr_1fr] gap-8">
-              <div className="col-span-2 md:col-span-4 lg:col-span-1">
-                <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="flex items-center gap-2.5 mb-4 min-h-[44px]" aria-label="Back to top">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-3">
+                <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="flex items-center gap-2.5 min-h-[44px]" aria-label="Back to top">
                   <AppLogo size={28} />
                   <span className="font-display text-lg font-semibold tracking-tight text-white">Nodea</span>
                 </button>
-                <p className="text-sm text-white/35 max-w-xs leading-relaxed">
-                What your data says about you. Insights and recommendations built from real activity — not a questionnaire.
+                <span className="hidden sm:inline-block h-4 w-px bg-white/[0.08]" />
+                <p className="text-sm text-white/35">
+                  Built on Vana · Data you already own
                 </p>
-                <div className="flex items-center gap-2 mt-5">
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.06] text-[11px] text-white/45">
-                    Vana Cup 2026
-                  </span>
-                </div>
               </div>
-
-              <div>
-                <h4 className="text-xs font-semibold uppercase tracking-widest text-white/45 mb-4">Product</h4>
-                <ul className="space-y-2.5">
-                  {[
-                    { label: "Connect", v: "connect" },
-                    { label: "How it works", v: "home", anchor: "how" },
-                    { label: "Leaderboard", v: "standings" },
-                    { label: "Your Mirror", v: "card" },
-                  ].map((l) => (
-                    <li key={l.label}>
-                      <button
-                        onClick={() => goView(l.v as ViewKey, l.anchor)}
-                        className="inline-flex items-center min-h-[44px] text-sm text-white/50 hover:text-white transition-colors"
-                      >
-                        {l.label}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div>
-                <h4 className="text-xs font-semibold uppercase tracking-widest text-white/45 mb-4">Data sources</h4>
-                <ul className="space-y-2.5">
-                  {DATA_SOURCES.slice(0, 7).map((s) => (
-                    <li key={s.id}>
-                      <button
-                        onClick={() => goView("connect")}
-                        className="inline-flex items-center min-w-[44px] min-h-[44px] text-sm text-white/50 hover:text-white transition-colors"
-                      >
-                        {s.name}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div>
-                <h4 className="text-xs font-semibold uppercase tracking-widest text-white/45 mb-4">Powered by</h4>
-                <ul className="space-y-2.5">
-                  <li><a href="https://www.vana.org" target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] text-sm text-white/50 hover:text-white transition-colors">Vana Data Portability</a></li>
-                  <li><a href="https://www.vana.org/cup" target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] text-sm text-white/50 hover:text-white transition-colors">Vana Cup 2026</a></li>
-                  <li><a href="https://github.com/rezkyrafael2901/nodea" target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] text-sm text-white/50 hover:text-white transition-colors">Open source</a></li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="mt-12 pt-8 border-t border-white/[0.04] flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="text-xs text-white/25">
-                © 2026 Nodea. Built for Vana Cup 2026.
-              </div>
-              <div className="text-xs text-white/25 text-center sm:text-right">
-                Data stays yours. Read with permission via Vana Data Portability.
+              <div className="text-xs text-white/30">
+                © 2026 Nodea. Built on Vana. / Your data, your rules.
               </div>
             </div>
           </div>

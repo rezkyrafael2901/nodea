@@ -54,12 +54,6 @@ export default function RootLayout({
       className={`${inter.variable} ${azeretMono.variable} ${ebGaramond.variable}`}
     >
       <head>
-        {/* Anti-flash: apply saved theme before first paint */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("nodea-theme");if(t==="light")document.documentElement.setAttribute("data-theme","light");else document.documentElement.setAttribute("data-theme","dark");}catch(e){document.documentElement.setAttribute("data-theme","dark");}})();`,
-          }}
-        />
       </head>
       <body className="antialiased min-h-screen">
         {children}

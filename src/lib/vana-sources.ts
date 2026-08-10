@@ -21,6 +21,8 @@ export interface DataSource {
   name: string;
   icon: BrandId;
   description: string;
+  outputSummary: string;     // one-line "what you'll get" description for home preview
+  dna: string;               // short "Your ___ DNA" framing for platform cards
   scopes: string[];          // web-mode scopes (server-side collectible)
   desktopScopes?: string[];  // full/deep scopes (desktop only)
   maturity: "stable" | "beta" | "experimental";
@@ -36,6 +38,8 @@ export const DATA_SOURCES: DataSource[] = [
     name: "LinkedIn",
     icon: "linkedin",
     description: "Your professional journey — career, skills & network.",
+    dna: "Your Career DNA",
+    outputSummary: "Your career trajectory, skill strengths, and professional network.",
     scopes: ["linkedin.profile"],
     desktopScopes: ["linkedin.profile", "linkedin.experience", "linkedin.education", "linkedin.skills"],
     maturity: "beta",
@@ -54,6 +58,8 @@ export const DATA_SOURCES: DataSource[] = [
     name: "Instagram",
     icon: "instagram",
     description: "How much you post, and how many follow you.",
+    dna: "Your Visual-story DNA",
+    outputSummary: "Your posting rhythm, audience growth, and content style.",
     scopes: ["instagram.profile"],
     desktopScopes: ["instagram.profile", "instagram.posts", "instagram.following", "instagram.ads"],
     maturity: "stable",
@@ -72,6 +78,8 @@ export const DATA_SOURCES: DataSource[] = [
     name: "GitHub",
     icon: "github",
     description: "When you joined and what you have built.",
+    dna: "Your Builder DNA",
+    outputSummary: "Your coding habits, top languages, and contribution patterns.",
     scopes: ["github.profile"],
     desktopScopes: ["github.contributions", "github.events", "github.history", "github.profile", "github.repositories", "github.starred"],
     maturity: "stable",
@@ -90,6 +98,8 @@ export const DATA_SOURCES: DataSource[] = [
     name: "Spotify",
     icon: "spotify",
     description: "A listening life.",
+    dna: "Your Music DNA",
+    outputSummary: "Your listening habits, genre taste, and music personality.",
     scopes: ["spotify.profile"],
     desktopScopes: ["spotify.playlists", "spotify.profile", "spotify.savedTracks"],
     maturity: "stable",
@@ -107,6 +117,8 @@ export const DATA_SOURCES: DataSource[] = [
     name: "YouTube",
     icon: "youtube",
     description: "The day your account was opened — and deeper history on desktop.",
+    dna: "Your Watch DNA",
+    outputSummary: "Your watch behavior, content interests, and viewing patterns.",
     scopes: ["youtube.profile"],
     desktopScopes: ["youtube.history", "youtube.likes", "youtube.playlists", "youtube.profile", "youtube.subscriptions", "youtube.watchLater"],
     maturity: "beta",
@@ -125,6 +137,8 @@ export const DATA_SOURCES: DataSource[] = [
     name: "Steam",
     icon: "steam",
     description: "Games, playtime & friends — deep data via Vana Desktop.",
+    dna: "Your Gaming DNA",
+    outputSummary: "Your gaming identity, playtime habits, and genre preferences.",
     scopes: ["steam.profile", "steam.games", "steam.friends"],
     maturity: "experimental",
     onboarded: false,
@@ -141,6 +155,8 @@ export const DATA_SOURCES: DataSource[] = [
     name: "ChatGPT",
     icon: "chatgpt",
     description: "Conversations & memories — deep data via Vana Desktop.",
+    dna: "Your AI DNA",
+    outputSummary: "Your AI usage patterns, thinking style, and topic range.",
     scopes: ["chatgpt.conversations", "chatgpt.memories"],
     maturity: "experimental",
     onboarded: false,

@@ -8,9 +8,12 @@
  * a "Powered by AI" / "Instant" badge, and a retry state when loading.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { Sparkles, Loader2, AlertTriangle, Zap, RefreshCw } from "lucide-react";
 import type { RecommendationResult, Fact } from "@/lib/recommendations";
+import { buildIdentityCard, buildSourceIdentityCard } from "@/lib/recommendations/engine";
+import { analyzeSource, isSupportedSource } from "@/lib/recommendations/rules";
+import type { Insight, SourceData } from "@/lib/recommendations/types";
 
 interface InsightsPanelProps {
   identities: { source: string; data: Record<string, unknown> }[];
@@ -84,6 +87,30 @@ export default function InsightsPanel({ identities, mode = "auto" }: InsightsPan
 
   const sourceIds = Object.keys(results);
 
+  // Build identity card from all insights across all sources
+  const identityCard = useMemo(() => {
+    const allInsights: { source: string; insights: Insight[] }[] = [];
+    for (const [src, r] of Object.entries(results)) {
+      if (r.recommendations.length > 0) {
+        allInsights.push({
+          source: src,
+          insights: r.recommendations.map((rec) => ({
+            id: rec.insight.id,
+            title: rec.insight.title,
+            emoji: rec.insight.emoji,
+            narrative: rec.narrative,
+            strength: rec.insight.strength,
+            evidence: rec.insight.evidence,
+            facts: r.facts
+              .filter((f) => rec.insight.evidence.includes(f.label))
+              .map((f) => ({ label: f.label, value: f.value })),
+          })),
+        });
+      }
+    }
+    return buildIdentityCard(allInsights);
+  }, [results]);
+
   if (identities.length === 0) return null;
 
   return (
@@ -131,10 +158,65 @@ export default function InsightsPanel({ identities, mode = "auto" }: InsightsPan
         </div>
       ) : (
         <div className="space-y-5">
+          {/* ── Identity Card (Pathfit-style primary output) ── */}
+          {identityCard && (
+            <div className="p-6 rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-white/[0.01]">
+              <div className="text-[10px] uppercase tracking-widest text-white/30 mb-4">Your identity card</div>
+
+              {/* Primary archetype */}
+              <div className="flex items-start gap-4">
+                <div className="text-3xl leading-none mt-0.5">{identityCard.primaryArchetype.emoji}</div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-display text-xl font-semibold text-white tracking-tight">
+                    {identityCard.primaryArchetype.title}
+                  </h3>
+                  <p className="text-sm text-white/50 italic mt-1">
+                    {identityCard.primaryArchetype.tagline}
+                  </p>
+                </div>
+              </div>
+
+              {/* Fit rationale */}
+              <p className="text-[13px] leading-relaxed text-white/55 mt-4">
+                {identityCard.primaryArchetype.fitRationale}
+              </p>
+
+              {/* Alternatives — clean list like Pathfit */}
+              {identityCard.alternatives.length > 0 && (
+                <div className="mt-5 pt-4 border-t border-white/[0.06]">
+                  <div className="text-[10px] uppercase tracking-widest text-white/30 mb-3">Also worth considering</div>
+                  <ul className="space-y-1.5">
+                    {identityCard.alternatives.map((alt) => (
+                      <li key={alt.title} className="text-sm text-white/55 flex items-center gap-2">
+                        <span className="text-base">{alt.emoji}</span>
+                        {alt.title}
+                        <span className="text-[10px] uppercase tracking-wider text-white/25">{SOURCE_LABEL[alt.source] ?? alt.source}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
           {sourceIds.map((src) => {
             const r = results[src];
             if (!r || r.recommendations.length === 0) return null;
             const llmUsed = r.engine === "llm";
+
+            // Build per-source identity card from this source's insights
+            const sourceInsights: Insight[] = r.recommendations.map((rec) => ({
+              id: rec.insight.id,
+              title: rec.insight.title,
+              emoji: rec.insight.emoji,
+              narrative: rec.narrative,
+              strength: rec.insight.strength,
+              evidence: rec.insight.evidence,
+              facts: r.facts
+                .filter((f) => rec.insight.evidence.includes(f.label))
+                .map((f) => ({ label: f.label, value: f.value })),
+            }));
+            const srcCard = buildSourceIdentityCard(src, sourceInsights);
+
             return (
               <div key={src} className="p-5 rounded-2xl glass glass-border">
                 <div className="flex items-center justify-between mb-4">
@@ -167,35 +249,74 @@ export default function InsightsPanel({ identities, mode = "auto" }: InsightsPan
                   </span>
                 </div>
 
-                <div className="space-y-4">
-                  {r.recommendations.map((rec) => (
-                    <div key={rec.insight.id} className="border-t border-white/[0.05] pt-4 first:border-t-0 first:pt-0">
-                      <div className="flex items-start gap-3">
-                        <div className="text-xl leading-none mt-0.5">{rec.insight.emoji}</div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2 mb-1">
-                            <h4 className="text-sm font-semibold text-white/85 tracking-tight">
-                              {rec.insight.title}
-                            </h4>
-                            <span className="shrink-0 text-[10px] font-medium tabular-nums text-white/35">
-                              {rec.insight.strength}
-                            </span>
-                          </div>
-                          <div className="h-1 rounded-full bg-white/[0.06] overflow-hidden mb-3">
-                            <div
-                              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-400"
-                              style={{ width: `${Math.max(4, Math.min(100, rec.insight.strength))}%` }}
-                            />
-                          </div>
-                          <p className="text-[13px] leading-relaxed text-white/60">
-                            {rec.narrative}
-                          </p>
-                          <FactChips facts={r.facts} insightEvidence={rec.insight.evidence} />
-                        </div>
+                {srcCard ? (
+                  /* ── Per-source identity card (Pathfit-style) ── */
+                  <div>
+                    {/* Primary archetype */}
+                    <div className="flex items-start gap-3">
+                      <div className="text-2xl leading-none mt-0.5">{srcCard.primaryArchetype.emoji}</div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-semibold text-white/90 tracking-tight">
+                          {srcCard.primaryArchetype.title}
+                        </h4>
+                        <p className="text-xs text-white/45 italic mt-0.5">
+                          {srcCard.primaryArchetype.tagline}
+                        </p>
                       </div>
                     </div>
-                  ))}
-                </div>
+
+                    {/* Fit rationale */}
+                    <p className="text-[13px] leading-relaxed text-white/55 mt-3">
+                      {srcCard.primaryArchetype.fitRationale}
+                    </p>
+
+                    {/* Alternatives — clean list like Pathfit */}
+                    {srcCard.alternatives.length > 0 && (
+                      <div className="mt-4 pt-3 border-t border-white/[0.06]">
+                        <div className="text-[10px] uppercase tracking-widest text-white/30 mb-2">Also worth considering</div>
+                        <ul className="space-y-1">
+                          {srcCard.alternatives.map((alt) => (
+                            <li key={alt.title} className="text-[13px] text-white/55 flex items-center gap-2">
+                              <span className="text-sm">{alt.emoji}</span>
+                              {alt.title}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  /* Fallback: flat insight list if card build fails */
+                  <div className="space-y-4">
+                    {r.recommendations.map((rec) => (
+                      <div key={rec.insight.id} className="border-t border-white/[0.05] pt-4 first:border-t-0 first:pt-0">
+                        <div className="flex items-start gap-3">
+                          <div className="text-xl leading-none mt-0.5">{rec.insight.emoji}</div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <h4 className="text-sm font-semibold text-white/85 tracking-tight">
+                                {rec.insight.title}
+                              </h4>
+                              <span className="shrink-0 text-[10px] font-medium tabular-nums text-white/35">
+                                {rec.insight.strength}
+                              </span>
+                            </div>
+                            <div className="h-1 rounded-full bg-white/[0.06] overflow-hidden mb-3">
+                              <div
+                                className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-400"
+                                style={{ width: `${Math.max(4, Math.min(100, rec.insight.strength))}%` }}
+                              />
+                            </div>
+                            <p className="text-[13px] leading-relaxed text-white/60">
+                              {rec.narrative}
+                            </p>
+                            <FactChips facts={r.facts} insightEvidence={rec.insight.evidence} />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
