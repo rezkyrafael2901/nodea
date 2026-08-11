@@ -20,15 +20,17 @@ const ebGaramond = EB_Garamond({
   style: ["normal", "italic"],
 });
 
-const appUrl = process.env.APP_URL || process.env.VERCEL_URL || "https://nodeahub.vercel.app";
+const appUrl = process.env.APP_URL || "https://nodea-app.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
-  title: "Nodea — What Your Data Says About You",
-  description: "Connect your accounts and discover the patterns, insights, and recommendations hidden in your real activity. No questionnaire — just your data, decoded.",
+  applicationName: "Nodea",
+  title: "Nodea — Meet Yourself in Your Data",
+  description: "Connect the accounts you choose and discover the patterns that make you, you. No questionnaire — just your data, decoded.",
+  manifest: "/manifest.webmanifest",
   openGraph: {
-    title: "Nodea — What Your Data Says About You",
-    description: "Connect your accounts and discover the patterns, insights, and recommendations hidden in your real activity.",
+    title: "Nodea — Meet Yourself in Your Data",
+    description: "Connect the accounts you choose and discover the patterns that make you, you.",
     type: "website",
     images: [
       {
