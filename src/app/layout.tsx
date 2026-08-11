@@ -57,6 +57,7 @@ export default function RootLayout({
       className={`${inter.variable} ${azeretMono.variable} ${ebGaramond.variable}`}
     >
       <head>
+        <link rel="manifest" href="/manifest.webmanifest" />
       </head>
       <body className="antialiased min-h-screen">
         {children}
