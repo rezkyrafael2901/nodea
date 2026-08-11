@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   applicationName: "Nodea",
   title: "Nodea — Meet Yourself in Your Data",
-  description: "Connect the accounts you choose and discover the patterns that make you, you. No questionnaire — just your data, decoded.",
+  description: "Your digital life says more about you than a bio ever could. Nodea helps you see it.",
   manifest: "/manifest.webmanifest",
   openGraph: {
     title: "Nodea — Meet Yourself in Your Data",
