@@ -1,0 +1,33 @@
+import type { MetadataRoute } from "next";
+
+const manifest = {
+  name: "Nodea — What Your Data Says About You",
+  short_name: "Nodea",
+  description:
+    "Connect your accounts and discover the patterns, insights, and recommendations hidden in your real activity. No questionnaire — just your data, decoded.",
+  start_url: "/",
+  display: "standalone",
+  background_color: "#0b1222",
+  theme_color: "#1e293b",
+  icons: [
+    {
+      src: "/icon.svg",
+      sizes: "48x48",
+      type: "image/svg+xml",
+    },
+    {
+      src: "/api/og.png",
+      sizes: "1200x630",
+      type: "image/png",
+    },
+  ],
+  // Vana-specific metadata consumed by the builders leaderboard scraper
+  // @ts-expect-error - 'vana' is a custom extension not in the W3C Manifest schema
+  vana: {
+    appUrl: "https://nodeahub.vercel.app",
+    privacyPolicyUrl: "https://nodeahub.vercel.app/privacy",
+    termsUrl: "https://nodeahub.vercel.app/terms",
+  },
+} as any;
+
+export default manifest;
