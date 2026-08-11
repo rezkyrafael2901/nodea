@@ -22,7 +22,6 @@ const manifest = {
     },
   ],
   // Vana-specific metadata consumed by the builders leaderboard scraper
-  // @ts-expect-error - 'vana' is a custom extension not in the W3C Manifest schema
   vana: {
     appUrl: "https://nodeahub.vercel.app",
     privacyPolicyUrl: "https://nodeahub.vercel.app/privacy",
