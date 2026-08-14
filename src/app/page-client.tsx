@@ -69,6 +69,7 @@ import {
 
 // Pure, client-safe recommendation engine (no LLM side-effects on the client).
 import { getRecommendationsSync, buildIdentityCard, type IdentityCard } from "@/lib/recommendations/engine";
+import type { SourceId } from "@/lib/recommendations/types";
 import mockData from "@/app/api/vana/data/mock-data";
 
 type ConnectState =
@@ -144,14 +145,6 @@ const cardVariants: Variants = {
   tap: { scale: 0.98 },
 };
 
-const glowVariants = {
-  animate: {
-    opacity: [0.3, 0.6, 0.3],
-    scale: [1, 1.05, 1],
-    transition: { duration: 4, repeat: Infinity, ease: "easeInOut" },
-  },
-};
-
 export default function PageClient() {
   // ── State ──
   const [onboardedSources, setOnboardedSources] = useState<Set<string>>(new Set());
@@ -162,6 +155,19 @@ export default function PageClient() {
   const [isDesktop, setIsDesktop] = useState(true);
   const [cardTheme, setCardTheme] = useState("midnight");
   const [reducedMotion, setReducedMotion] = useState(false);
+
+  // The result view is intentionally automatic: a successful read should feel like
+  // Pathfit's reveal, not like a background connection followed by another task.
+  const buildLocalAnalysis = useCallback((list: IdentityData[]) => {
+    const recs = list.map((identity) => ({
+      source: identity.source,
+      insights: getRecommendationsSync({
+        sourceId: identity.source as SourceId,
+        data: identity.data as Record<string, unknown>,
+      }).insights,
+    }));
+    return { card: buildIdentityCard(recs), score: computeSoulScore(list), generatedAt: new Date().toISOString() };
+  }, []);
 
   // Connect flow
   const [connectState, setConnectState] = useState<ConnectState>("idle");
@@ -289,7 +295,7 @@ export default function PageClient() {
     return () => mq.removeEventListener("change", handler);
   }, []);
 
-  // Restore persisted connections on mount so a refresh doesn't wipe the mirror.
+  // Restore persisted connections and the latest analysis on refresh.
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
@@ -299,6 +305,8 @@ export default function PageClient() {
         if (Array.isArray(list) && list.length) {
           setIdentities(list);
           setOnboardedSources(new Set(list.map((i) => i.source)));
+          const cached = window.localStorage.getItem("nodea:analysis");
+          if (cached) setIdentityResult(JSON.parse(cached) as Record<string, unknown>);
         }
       }
     } catch {}
@@ -328,7 +336,13 @@ export default function PageClient() {
     });
     setIdentities((prev) => {
       const next = prev.filter((i) => i.source !== sourceId);
-      try { window.localStorage.setItem("nodea:identities", JSON.stringify(next)); } catch {}
+      const analysis = next.length ? buildLocalAnalysis(next) : null;
+      setIdentityResult(analysis as unknown as Record<string, unknown> | null);
+      try {
+        window.localStorage.setItem("nodea:identities", JSON.stringify(next));
+        if (analysis) window.localStorage.setItem("nodea:analysis", JSON.stringify(analysis));
+        else window.localStorage.removeItem("nodea:analysis");
+      } catch {}
       return next;
     });
   }, []);
@@ -469,9 +483,18 @@ export default function PageClient() {
         next.add(sourceId);
         return next;
       });
-      setIdentities((prev) => [...prev, identityData]);
+      setIdentities((prev) => {
+        const next = [...prev.filter((item) => item.source !== sourceId), identityData];
+        const analysis = buildLocalAnalysis(next);
+        setIdentityResult(analysis as unknown as Record<string, unknown>);
+        try {
+          window.localStorage.setItem("nodea:analysis", JSON.stringify(analysis));
+        } catch {}
+        return next;
+      });
       setConnectState("done");
-      setStatusMessage(`✅ Connected ${sourceId}${mode === "full" ? " (deep data)" : ""}!`);
+      setStatusMessage(`✅ Connected ${sourceId}${mode === "full" ? " (deep data)" : ""}. Your analysis is ready.`);
+      setTimeout(() => goView("card"), 350);
       setError("");
       clearPending();
 
@@ -1132,15 +1155,11 @@ export default function PageClient() {
       initial="initial"
       animate="animate"
       variants={pageVariants}
-      className="min-h-dvh bg-[var(--color-bg)] text-white relative overflow-x-hidden"
+      className="min-h-dvh bg-[var(--color-bg)] text-white relative overflow-x-hidden isolate"
       style={{ paddingBottom: "calc(6rem + env(safe-area-inset-bottom))" }}
     >
-      {/* ── Animated Background ── */}
-      <motion.div
-        className="pointer-events-none fixed inset-0 -z-10"
-        animate={glowVariants}
-        style={{ willChange: "transform, opacity" }}
-      >
+      {/* ── Static Background (Aurora glow, no animation) ── */}
+      <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full bg-blue-600/8 blur-[150px]" />
         <div className="absolute top-1/3 -left-60 w-[500px] h-[500px] rounded-full bg-cyan-600/5 blur-[120px]" />
         <div className="absolute bottom-0 right-0 w-[600px] h-[400px] rounded-full bg-cyan-600/5 blur-[150px]" />
@@ -1150,26 +1169,6 @@ export default function PageClient() {
             background: "radial-gradient(ellipse at 50% 0%, rgba(79,140,255,0.08) 0%, transparent 60%)",
           }}
         />
-      </motion.div>
-
-      {/* ── Floating Particles ── */}
-      <div className="pointer-events-none fixed inset-0 -z-10" aria-hidden="true">
-        {[...Array(12)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 rounded-full bg-blue-500/30"
-            style={{
-              left: `${5 + Math.random() * 90}%`,
-              top: `${5 + Math.random() * 90}%`,
-            }}
-            animate={{
-              y: [-20, 20, -20],
-              x: [-10, 10, -10],
-              opacity: [0.1, 0.4, 0.1],
-            }}
-            transition={{ duration: 15 + Math.random() * 10, repeat: Infinity, ease: "linear", delay: Math.random() * 5 }}
-          />
-        ))}
       </div>
 
       <div className="relative z-10">
