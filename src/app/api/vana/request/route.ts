@@ -25,17 +25,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if app private key is configured
+    // Mock data is development-only. Never report a fake connection in production.
     if (!process.env.VANA_APP_PRIVATE_KEY) {
-      return NextResponse.json(
-        {
-          error: "Vana app private key not configured. Set VANA_APP_PRIVATE_KEY in environment.",
-          devMode: true,
-          sourceId,
-          mode,
-        },
-        { status: 501 }
-      );
+      if (process.env.NODE_ENV === "production") {
+        return NextResponse.json(
+          { error: "Vana connection is temporarily unavailable. The app integration is not configured." },
+          { status: 503 }
+        );
+      }
+      return NextResponse.json({ error: "Vana app private key not configured.", devMode: true, sourceId, mode }, { status: 501 });
     }
 
     // Create a controller for this specific source + mode

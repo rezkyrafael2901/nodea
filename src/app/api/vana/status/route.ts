@@ -25,15 +25,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Missing or invalid sourceId" }, { status: 400 });
     }
 
-    // Check if app private key is configured
+    // Never turn a missing production integration into a fake approved request.
     if (!process.env.VANA_APP_PRIVATE_KEY) {
-      return NextResponse.json({
-        error: "Vana app private key not configured",
-        devMode: true,
-        status: "approved",
-        requestId,
-        sourceId,
-      });
+      if (process.env.NODE_ENV === "production") {
+        return NextResponse.json({ error: "Vana connection is temporarily unavailable." }, { status: 503 });
+      }
+      return NextResponse.json({ error: "Vana app private key not configured", devMode: true, status: "approved", requestId, sourceId });
     }
 
     const controller = createVanaController(sourceId, mode);
