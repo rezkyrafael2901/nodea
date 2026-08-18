@@ -1,7 +1,7 @@
 /**
  * rewards.ts — Vana Cup reward config + identity helpers.
  *
- * Mirrors the Patina-style reward/referral gamification layer.
+ * Follows the Patina-style reward/referral gamification layer.
  * Pure constants + pure functions — safe for client & server.
  */
 

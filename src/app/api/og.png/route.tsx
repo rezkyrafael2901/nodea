@@ -181,9 +181,9 @@ export async function GET(request: Request) {
             ))}
           </div>
 
-          {/* Soul Score bar */}
+          {/* Nodea Score bar */}
           <div style={{ display: "flex", flexDirection: "column", marginTop: 28 }}>
-            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", fontWeight: 600, display: "flex" }}>SOUL SCORE</div>
+            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", fontWeight: 600, display: "flex" }}>NODEA SCORE</div>
             <div
               style={{
                 marginTop: 6,
@@ -249,7 +249,7 @@ export async function GET(request: Request) {
               Aesthetic: {aesthetic} • Built on Vana Network
             </div>
             <div style={{ fontSize: 13, color: "rgba(255,255,255,0.2)", display: "flex", gap: 4 }}>
-              nodeahub.vercel.app{ref ? ` · via ${ref}` : ""}
+              nodea-v2.vercel.app{ref ? ` · via ${ref}` : ""}
             </div>
           </div>
         </div>

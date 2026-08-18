@@ -20,17 +20,16 @@ const ebGaramond = EB_Garamond({
   style: ["normal", "italic"],
 });
 
-const appUrl = process.env.APP_URL || "https://nodea-app.vercel.app";
+const rawAppUrl = process.env.APP_URL || process.env.VERCEL_URL || "https://nodea-v2.vercel.app";
+const appUrl = rawAppUrl.startsWith("http://") || rawAppUrl.startsWith("https://") ? rawAppUrl : `https://${rawAppUrl}`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
-  applicationName: "Nodea",
-  title: "Nodea — Meet Yourself in Your Data",
-  description: "Your digital life says more about you than a bio ever could. Nodea helps you see it.",
-  manifest: "/manifest.webmanifest",
+  title: "Nodea — What Your Data Says About You",
+  description: "Connect your accounts and discover the patterns, insights, and recommendations hidden in your real activity. No questionnaire — just your data, decoded.",
   openGraph: {
-    title: "Nodea — Meet Yourself in Your Data",
-    description: "Connect the accounts you choose and discover the patterns that make you, you.",
+    title: "Nodea — What Your Data Says About You",
+    description: "Connect your accounts and discover the patterns, insights, and recommendations hidden in your real activity.",
     type: "website",
     images: [
       {
@@ -59,7 +58,6 @@ export default function RootLayout({
       className={`${inter.variable} ${azeretMono.variable} ${ebGaramond.variable}`}
     >
       <head>
-        <link rel="manifest" href="/manifest.webmanifest" />
       </head>
       <body className="antialiased min-h-screen">
         {children}

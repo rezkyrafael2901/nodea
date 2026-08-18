@@ -568,6 +568,44 @@
 }
 .animate-rotate-slow { animation: rotate-slow 20s linear infinite; }
 
+/* ── Aurora background drift (global ambient) ── */
+/* NOTE: decorative ambient — runs regardless of prefers-reduced-motion
+   (drift is slow, non-disorienting, and this app treats it as brand motion).
+   Kept gentle so it never triggers vestibular sensitivity. */
+@keyframes aurora-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(140px, -90px) scale(1.18); }
+  66% { transform: translate(-90px, 70px) scale(0.9); }
+}
+@keyframes aurora-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  40% { transform: translate(-120px, 100px) scale(1.14); }
+  75% { transform: translate(100px, -60px) scale(0.92); }
+}
+@keyframes aurora-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  30% { transform: translate(110px, 90px) scale(0.88); }
+  70% { transform: translate(-140px, -110px) scale(1.22); }
+}
+@keyframes aurora-4 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(90px, -140px) scale(1.16); }
+}
+.animate-aurora-1 { animation: aurora-1 20s ease-in-out infinite; will-change: transform; }
+.animate-aurora-2 { animation: aurora-2 26s ease-in-out infinite; will-change: transform; }
+.animate-aurora-3 { animation: aurora-3 30s ease-in-out infinite; will-change: transform; }
+.animate-aurora-4 { animation: aurora-4 18s ease-in-out infinite; will-change: transform; }
+
+/* Fallback for ancient browsers without CSS animation support */
+@supports not (animation: aurora-1 20s ease-in-out infinite) {
+  .animate-aurora-1,
+  .animate-aurora-2,
+  .animate-aurora-3,
+  .animate-aurora-4 {
+    animation: none;
+  }
+}
+
 /* Stagger delays */
 .stagger-1 { animation-delay: 50ms; }
 .stagger-2 { animation-delay: 100ms; }

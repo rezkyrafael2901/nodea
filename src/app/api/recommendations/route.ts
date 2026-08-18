@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     let devMode = false;
 
     if (!data || Object.keys(data).length === 0) {
-      // Dev-mode fallback: use mock data (mirrors /api/vana/data behavior)
+      // Dev-mode fallback: use mock data (follows /api/vana/data behavior)
       const { default: mockData } = await import("../vana/data/mock-data");
       const mock = mockData(sourceId);
       if (mock && !("error" in mock)) {

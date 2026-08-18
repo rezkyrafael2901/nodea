@@ -25,6 +25,15 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["sharp"],
+  async redirects() {
+    return [
+      // Deep-link: /standings → /app/standings
+      // Users & external links may reference /standings directly; the actual
+      // route lives under /app/standings. Permanent redirect keeps bookmarks
+      // working and avoids a 404.
+      { source: "/standings", destination: "/app/standings", permanent: true },
+    ];
+  },
   async headers() {
     return [
       {

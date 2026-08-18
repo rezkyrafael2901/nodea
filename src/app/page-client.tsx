@@ -14,9 +14,9 @@ import { getTraits, getTopTrait, type Trait } from "@/lib/traits";
 import { type LeaderboardEntry } from "@/lib/rewards";
 import { DataSoulCard } from "@/components/data-soul-card";
 import InsightsPanel from "@/components/insights-panel";
+import IdentityResult from "@/components/identity-result";
 import { BrandIconTile, BrandIcon, type BrandId } from "@/components/brand-icons";
 import { AppLogo, AppWordmark } from "@/components/app-logo";
-import { SourceOrbit } from "@/components/source-orbit";
 import {
   Plus,
   Check,
@@ -33,7 +33,6 @@ import {
   ChevronDown,
   Layers,
   Zap,
-  Home,
   Brain,
   Users,
   Menu,
@@ -52,14 +51,15 @@ import {
   Trophy,
   Star,
   Newspaper,
-  CreditCard,
   TrendingUp,
   ArrowUpRight,
   BarChart2,
   Shield,
   Clock,
+  Database,
   Link,
   ArrowRight,
+  ArrowLeft,
   BookOpen,
   Trash2,
   HelpCircle,
@@ -69,7 +69,6 @@ import {
 
 // Pure, client-safe recommendation engine (no LLM side-effects on the client).
 import { getRecommendationsSync, buildIdentityCard, type IdentityCard } from "@/lib/recommendations/engine";
-import type { SourceId } from "@/lib/recommendations/types";
 import mockData from "@/app/api/vana/data/mock-data";
 
 type ConnectState =
@@ -145,8 +144,35 @@ const cardVariants: Variants = {
   tap: { scale: 0.98 },
 };
 
-export default function PageClient() {
+const glowVariants = {
+  animate: {
+    opacity: [0.3, 0.6, 0.3],
+    scale: [1, 1.05, 1],
+    transition: { duration: 4, repeat: Infinity, ease: "easeInOut" },
+  },
+};
+
+type PageVariant = "landing" | "connect" | "app";
+type ViewKey = "home" | "article" | "connect" | "card" | "standings" | "identity" | "insights" | "settings";
+type NavItem = { v: ViewKey; label: string; anchor?: string };
+
+export default function PageClient({
+  initialView = "home",
+  variant = "landing",
+}: {
+  initialView?: ViewKey;
+  variant?: PageVariant;
+}) {
   // ── State ──
+  const [activeNav, setActiveNav] = useState<string>(
+    initialView === "standings"
+      ? "Standings"
+      : initialView === "settings"
+        ? "Settings"
+        : initialView === "card" || initialView === "identity" || initialView === "insights"
+          ? "Reflection"
+          : "Home"
+  );
   const [onboardedSources, setOnboardedSources] = useState<Set<string>>(new Set());
   const [identities, setIdentities] = useState<IdentityData[]>([]);
   const [identityResult, setIdentityResult] = useState<Record<string, unknown> | null>(null);
@@ -155,19 +181,6 @@ export default function PageClient() {
   const [isDesktop, setIsDesktop] = useState(true);
   const [cardTheme, setCardTheme] = useState("midnight");
   const [reducedMotion, setReducedMotion] = useState(false);
-
-  // The result view is intentionally automatic: a successful read should feel like
-  // Pathfit's reveal, not like a background connection followed by another task.
-  const buildLocalAnalysis = useCallback((list: IdentityData[]) => {
-    const recs = list.map((identity) => ({
-      source: identity.source,
-      insights: getRecommendationsSync({
-        sourceId: identity.source as SourceId,
-        data: identity.data as Record<string, unknown>,
-      }).insights,
-    }));
-    return { card: buildIdentityCard(recs), score: computeSoulScore(list), generatedAt: new Date().toISOString() };
-  }, []);
 
   // Connect flow
   const [connectState, setConnectState] = useState<ConnectState>("idle");
@@ -201,15 +214,66 @@ export default function PageClient() {
 
   const [refFrom, setRefFrom] = useState<string | null>(null);
   const [navOpen, setNavOpen] = useState(false);
+  // Mobile-friendly "Add a source" bottom sheet — dipakai untuk entry point
+  // connect di dalam dashboard (/app) supaya user gak dilempar ke landing.
+  const [connectSheetOpen, setConnectSheetOpen] = useState(false);
 
   // ── Tab-based navigation (Patina-style bottom nav) ──
-  type ViewKey = "home" | "article" | "connect" | "card" | "standings";
-  const [view, setView] = useState<ViewKey>("home");
+  const [view, setView] = useState<ViewKey>(initialView);
   const [expandedFaq, setExpandedFaq] = useState<string | null>(null);
+  // Pre-selected source dari home card → connect view (scroll + highlight)
+  // (Tab Connect dihapus — state ini tidak dipakai lagi)
 
   const goView = useCallback((v: ViewKey, anchor?: string) => {
     setNavOpen(false);
+    // Tab Connect dihapus — semua entry point connect diarahkan ke home + scroll ke source grid
+    if (v === "connect") {
+      setView("home");
+      if (typeof window !== "undefined") {
+        if (window.location.pathname !== "/") window.history.pushState({}, "", "/");
+        const el = document.getElementById("sources");
+        setTimeout(() => {
+          if (el) {
+            window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: "smooth" });
+          } else {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }
+        }, 80);
+      }
+      return;
+    }
     setView(v);
+    if (typeof window !== "undefined") {
+    const route =
+      v === "home"
+        ? "/"
+        : v === "card"
+        ? "/app"
+        : v === "identity"
+        ? "/app/identity"
+        : v === "insights"
+        ? "/app/insights"
+        : v === "standings"
+        ? "/app/standings"
+        : v === "settings"
+        ? "/settings"
+        : "/";
+      // The header nav is now identical on every route, so SPA pushState is always safe —
+      // no full reload needed when switching tabs.
+      if (window.location.pathname !== route) window.history.pushState({}, "", route);
+    }
+    // Keep the header active-tab in sync with any navigation that happens outside
+    // the header itself (sub-tabs, CTAs, initial view). Anchor clicks from the
+    // header keep their own label via handleNav and are intentionally left alone.
+    if (v === "card" || v === "identity" || v === "insights") {
+      setActiveNav("Reflection");
+    } else if (v === "standings") {
+      setActiveNav("Standings");
+    } else if (v === "home" && !anchor) {
+      setActiveNav("Home");
+    } else if (v === "settings") {
+      setActiveNav("Settings");
+    }
     setTimeout(() => {
       if (anchor) {
         const el = document.getElementById(anchor);
@@ -218,7 +282,31 @@ export default function PageClient() {
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
     }, 80);
-  }, []);
+  }, [variant]);
+
+  // Connect entry-point dispatcher:
+  // - Di landing (view "home") tetap scroll ke source grid (#sources) — konteks
+  //   halaman utuh, semua section tetep kebaca.
+  // - Di dalam dashboard (/app, Reflection/Identity/Insights/Settings/Standings)
+  //   buka bottom sheet "Add a source" supaya user gak dilempar ke landing.
+  const openConnect = useCallback(() => {
+    if (view === "home") {
+      goView("connect");
+    } else {
+      setConnectSheetOpen(true);
+      setNavOpen(false);
+    }
+  }, [view, goView]);
+
+  // Header nav click — the pressed tab always lights up, even anchor items
+  // (How it works / Privacy / FAQ) which scroll inside the home page.
+  const handleNav = useCallback(
+    (item: { v: ViewKey; label: string; anchor?: string }) => {
+      setActiveNav(item.label);
+      goView(item.v as ViewKey, item.anchor);
+    },
+    [goView]
+  );
 
   const [scrolled, setScrolled] = useState(false);
 
@@ -295,7 +383,7 @@ export default function PageClient() {
     return () => mq.removeEventListener("change", handler);
   }, []);
 
-  // Restore persisted connections and the latest analysis on refresh.
+  // Restore persisted connections on mount so a refresh doesn't wipe the reflection.
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
@@ -305,8 +393,6 @@ export default function PageClient() {
         if (Array.isArray(list) && list.length) {
           setIdentities(list);
           setOnboardedSources(new Set(list.map((i) => i.source)));
-          const cached = window.localStorage.getItem("nodea:analysis");
-          if (cached) setIdentityResult(JSON.parse(cached) as Record<string, unknown>);
         }
       }
     } catch {}
@@ -326,7 +412,7 @@ export default function PageClient() {
   };
   useEffect(() => { persistIdentities(identities); }, [identities]);
 
-  // Remove a source from the mirror — data, score, and persisted state.
+  // Remove a source from the reflection — data, score, and persisted state.
   const disconnectSource = useCallback((sourceId: string) => {
     setOnboardedSources((prev) => {
       const next = new Set(prev);
@@ -336,13 +422,7 @@ export default function PageClient() {
     });
     setIdentities((prev) => {
       const next = prev.filter((i) => i.source !== sourceId);
-      const analysis = next.length ? buildLocalAnalysis(next) : null;
-      setIdentityResult(analysis as unknown as Record<string, unknown> | null);
-      try {
-        window.localStorage.setItem("nodea:identities", JSON.stringify(next));
-        if (analysis) window.localStorage.setItem("nodea:analysis", JSON.stringify(analysis));
-        else window.localStorage.removeItem("nodea:analysis");
-      } catch {}
+      try { window.localStorage.setItem("nodea:identities", JSON.stringify(next)); } catch {}
       return next;
     });
   }, []);
@@ -392,7 +472,7 @@ export default function PageClient() {
         const seconds = attempt * 1.5;
         if (seconds < 3) return "Opening the Vana approval tab…";
         if (seconds < 8) return "Waiting for you to approve in the Vana tab…";
-        if (seconds < 18) return "Reading your history…";
+        if (seconds < 18) return "We're finding patterns in your activity…";
         if (seconds < 35) return "This is the slow part. Your history is being collected for the first time…";
         return `Still going. First reads usually take up to ${Math.ceil((maxAttempts - attempt) * 1.5 / 60)} min…`;
       };
@@ -483,18 +563,9 @@ export default function PageClient() {
         next.add(sourceId);
         return next;
       });
-      setIdentities((prev) => {
-        const next = [...prev.filter((item) => item.source !== sourceId), identityData];
-        const analysis = buildLocalAnalysis(next);
-        setIdentityResult(analysis as unknown as Record<string, unknown>);
-        try {
-          window.localStorage.setItem("nodea:analysis", JSON.stringify(analysis));
-        } catch {}
-        return next;
-      });
+      setIdentities((prev) => [...prev, identityData]);
       setConnectState("done");
-      setStatusMessage(`✅ Connected ${sourceId}${mode === "full" ? " (deep data)" : ""}. Your analysis is ready.`);
-      setTimeout(() => goView("card"), 350);
+      setStatusMessage(`✅ Connected ${sourceId}${mode === "full" ? " (deep data)" : ""}!`);
       setError("");
       clearPending();
 
@@ -504,7 +575,10 @@ export default function PageClient() {
         setActiveMode("web");
         setActiveRequestId(null);
         setStatusMessage("");
-      }, 2000);
+        setConnectSheetOpen(false);
+        // Land the user on their Reflection so the research result is the payoff.
+        goView("card");
+      }, 1600);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to fetch data";
       if (/payment|escrow|insufficient|balance|402/i.test(msg)) {
@@ -608,6 +682,20 @@ export default function PageClient() {
     if (src) handleConnect(src, mode);
   };
 
+  const openVanaApproval = (url: string): Window | null => {
+    // Mobile browsers ignore popup window features (width/height) — a spaced
+    // popup turns into a blank tab. Open a plain "_blank" tab on touch/mobile
+    // so the Vana approval page actually renders; desktop keeps the popup so
+    // the polling loop stays in the main tab.
+    const isMobile =
+      typeof window !== "undefined" &&
+      (window.matchMedia("(max-width: 768px)").matches ||
+        ("ontouchstart" in window && window.innerWidth < 1024));
+    return isMobile
+      ? window.open(url, "_blank")
+      : window.open(url, "vana-connect", "width=600,height=700,scrollbars=yes");
+  };
+
   const handleConnect = async (source: DataSource, mode: "web" | "full" = "web") => {
     if (connectState !== "idle" && connectState !== "error") return;
     if (source.platform === "desktop" && !isDesktop) return;
@@ -648,7 +736,9 @@ export default function PageClient() {
             setActiveSource(null);
             setActiveMode("web");
             setStatusMessage("");
-          }, 2000);
+            setConnectSheetOpen(false);
+            goView("card");
+          }, 1600);
           return;
         }
         throw new Error(data.error);
@@ -659,7 +749,7 @@ export default function PageClient() {
       setStatusMessage("Approve access in the new window...");
       savePending(data.requestId, source.id, mode);
 
-      const popup = window.open(data.approvalUrl, "vana-connect", "width=600,height=700,scrollbars=yes");
+      const popup = openVanaApproval(data.approvalUrl);
       if (!popup || popup.closed) {
         popupRef.current = null;
         setStatusMessage("Popup was blocked. Use the link below to approve in a new tab.");
@@ -685,7 +775,7 @@ export default function PageClient() {
         .then((r) => r.json())
         .then((data) => {
           if (data.approvalUrl) {
-            window.open(data.approvalUrl, "vana-connect", "width=600,height=700");
+            openVanaApproval(data.approvalUrl);
             popupRef.current = null;
           }
         })
@@ -843,7 +933,8 @@ export default function PageClient() {
   const desktopSources = DATA_SOURCES.filter((s) => s.platform === "desktop");
   const hybridSources = DATA_SOURCES.filter((s) => s.platform === "hybrid");
 
-  const renderSourceCard = (source: DataSource, index: number) => {
+  // Action area (Connect / Connected / Desktop only / states) — reusable di card home
+  const renderSourceActions = (source: DataSource) => {
     const isConnected = onboardedSources.has(source.id);
     const isDesktopOnly = source.platform === "desktop";
     const isHybrid = source.platform === "hybrid";
@@ -861,190 +952,103 @@ export default function PageClient() {
     const connectLabel = isDesktopOnly ? "full" : "web";
 
     return (
-      <motion.div
-        key={source.id}
-        variants={cardVariants}
-        custom={index}
-        initial="initial"
-        animate="animate"
-        whileHover={reducedMotion ? {} : "hover"}
-        whileTap={reducedMotion ? {} : "tap"}
-        className={`group relative flex h-full flex-col rounded-2xl border p-5 transition-all duration-300 ease-out ${
-          isConnected
-            ? "bg-emerald-500/[0.03] border-emerald-500/20 hover:border-emerald-500/40"
-            : disabledOnMobile
-            ? "bg-white/[0.01] border-white/[0.04] opacity-50"
-            : hasError
-            ? "border-amber-500/30 bg-amber-500/[0.03] hover:border-amber-500/50"
-            : "glass glass-border-hover hover:bg-white/[0.03]"
-        }`}
-      >
-        <div className="flex items-start gap-3.5 min-w-0">
-          <motion.div
-            whileHover={reducedMotion ? {} : { scale: 1.1, rotate: -3 }}
-            className="shrink-0 transition-transform duration-300 ease-out"
-          >
-            <BrandIconTile id={source.icon} size={48} />
-          </motion.div>
-          <div className="min-w-0 flex-1 pt-1">
-            <motion.h3
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="font-medium text-white group-hover:text-white transition-colors duration-300 truncate flex items-center gap-2"
+      <div className="flex w-full items-center justify-end gap-1.5">
+        {isConnected ? (
+          <div className="flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-xs font-medium text-emerald-300">
+              <Check className="w-3.5 h-3.5" /> Connected
+            </span>
+            <motion.button
+              type="button"
+              whileHover={reducedMotion ? {} : { scale: 1.05 }}
+              whileTap={reducedMotion ? {} : { scale: 0.95 }}
+              onClick={() => disconnectSource(source.id)}
+              className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-rose-300 hover:text-rose-200 hover:bg-rose-500/10 border border-rose-500/20 hover:border-rose-500/40 transition-colors"
+              title={`Disconnect ${source.name} — remove its data from your reflection`}
             >
-              {source.name}
-              {isConnected && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-400 shrink-0">
-                  <Check className="w-3 h-3" /> Connected
-                </span>
-              )}
-            </motion.h3>
-            <motion.p
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="text-xs text-white/45 truncate transition-colors duration-300 group-hover:text-white/60 mt-0.5"
-            >
-              {source.description}
-            </motion.p>
+              <Trash2 className="w-3.5 h-3.5" />
+            </motion.button>
           </div>
-        </div>
-
-        {disabledOnMobile && source.findIt && (
-          <motion.p
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            className="mt-3 text-[11px] text-white/35 leading-relaxed line-clamp-2"
-          >
-            {source.findIt.join(" ")}
-          </motion.p>
-        )}
-
-        {isHybrid && isDesktop && !isConnected && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-3 text-[11px] text-white/35 leading-relaxed"
-          >
-            <span className="text-yellow-400/70 font-medium">Profile</span> works anywhere.{" "}
-            <span className="text-blue-300/70 font-medium">Deep</span> pulls watch history, likes &
-            subscriptions — connect it in Vana Desktop first for full data.
-          </motion.div>
-        )}
-
-        {hasError && (
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-3 text-[11px] text-amber-400/80 leading-relaxed"
-          >
-            Connection failed. Try again or cancel.
-          </motion.p>
-        )}
-
-        <div className="mt-auto pt-4">
-          {isConnected ? (
-            <div className="flex items-center justify-between gap-2 text-xs text-emerald-400">
-              <div className="flex items-center gap-2 min-w-0">
-                <Zap className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate">Contributing to your Nodea Score</span>
+        ) : (
+          <div className="flex items-center gap-1.5">
+            {disabledOnMobile ? (
+              <div className="inline-flex items-center justify-center h-8 px-3 rounded-lg text-[11px] text-white/35 bg-white/[0.02] border border-white/[0.06]">
+                <Monitor className="w-3.5 h-3.5 mr-1.5" />
+                Desktop only
               </div>
-              <motion.button
-                type="button"
-                whileHover={reducedMotion ? {} : { scale: 1.04 }}
-                whileTap={reducedMotion ? {} : { scale: 0.95 }}
-                onClick={() => disconnectSource(source.id)}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-rose-300 hover:text-rose-200 hover:bg-rose-500/10 border border-rose-500/20 hover:border-rose-500/30 transition-colors shrink-0"
-                title={`Disconnect ${source.name} — remove its data from your mirror`}
-              >
-                <Trash2 className="w-3.5 h-3.5" /> Disconnect
-              </motion.button>
-            </div>
-          ) : (
-            <div className="flex items-center justify-end gap-2">
-              {disabledOnMobile ? (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] text-white/30 bg-white/[0.02] border border-white/[0.04]">
-                  <Monitor className="w-3.5 h-3.5" />
-                  <span>Desktop only</span>
-                </div>
-              ) : isConnecting ? (
-                <>
-                  <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-500/25 bg-blue-500/10 px-3 py-1.5 text-[11px] font-medium text-blue-300">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    {connectState === "awaiting_approval" ? "Waiting for approval…" : "Connecting…"}
-                  </span>
-                  <button
-                    onClick={cancelConnect}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/30 px-3 py-1.5 text-[11px] font-medium text-red-400 hover:bg-red-500/10 transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" /> Cancel
-                  </button>
-                </>
-              ) : hasError ? (
-                <>
-                  <button
-                    onClick={() => openLinkCheck(source, connectLabel)}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/30 px-3 py-1.5 text-[11px] font-medium text-amber-400 hover:bg-amber-500/10 transition-colors"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" /> Try again
-                  </button>
-                  <button
-                    onClick={cancelConnect}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-[11px] font-medium text-white/50 hover:bg-white/5 transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" /> Cancel
-                  </button>
-                </>
-              ) : isHybrid && isDesktop && !isConnected ? (
-                <>
-                  <button
-                    onClick={() => openLinkCheck(source, "web")}
-                    disabled={isDisabled}
-                    className="inline-flex items-center justify-center min-h-[36px] px-4 py-2 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-xs font-medium transition-colors"
-                    title="Profile only — works anywhere"
-                  >
-                    Profile
-                  </button>
-                  <button
-                    onClick={() => openLinkCheck(source, "full")}
-                    disabled={isDisabled}
-                    className="inline-flex items-center justify-center min-h-[36px] px-4 py-2 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 hover:border-blue-500/50 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-xs font-medium text-blue-200 transition-colors"
-                    title="Watch history, likes, subscriptions — needs Vana Desktop"
-                  >
-                    Deep
-                  </button>
-                </>
-              ) : (
+            ) : isConnecting ? (
+              <>
+                <span className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-blue-500/25 bg-blue-500/10 text-[11px] font-medium text-blue-300">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  {connectState === "awaiting_approval" ? "Waiting…" : "Connecting…"}
+                </span>
+                <button
+                  onClick={cancelConnect}
+                  className="inline-flex items-center justify-center h-8 px-2.5 rounded-lg border border-red-500/30 text-[11px] font-medium text-red-400 hover:bg-red-500/10 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </>
+            ) : hasError ? (
+              <>
                 <button
                   onClick={() => openLinkCheck(source, connectLabel)}
-                  disabled={isDisabled}
-                  className={`inline-flex items-center justify-center min-h-[36px] gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                    hasError
-                      ? "border border-amber-500/30 bg-amber-500/10 text-amber-400"
-                      : "border border-cyan-400/30 bg-cyan-400/[0.06] text-cyan-300 hover:bg-cyan-400/10 hover:border-cyan-400/50 disabled:opacity-40 disabled:cursor-not-allowed"
-                  }`}
+                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-amber-500/30 text-[11px] font-medium text-amber-400 hover:bg-amber-500/10 transition-colors"
                 >
-                  {isConnected ? (
-                    <>
-                      <Check className="w-4 h-4" />
-                      Connected
-                    </>
-                  ) : isActiveSource ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      {connectState === "awaiting_approval" ? "Pending…" : "Connecting…"}
-                    </>
-                  ) : (
-                    <>
-                      Connect
-                      <ArrowUpRight className="w-3.5 h-3.5 opacity-60" />
-                    </>
-                  )}
+                  <RotateCcw className="w-3.5 h-3.5" /> Retry
                 </button>
-              )}
-            </div>
-          )}
-        </div>
-      </motion.div>
+                <button
+                  onClick={cancelConnect}
+                  className="inline-flex items-center justify-center h-8 px-2.5 rounded-lg border border-white/10 text-[11px] font-medium text-white/50 hover:bg-white/5 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </>
+            ) : isHybrid && isDesktop && !isConnected ? (
+              <>
+                <button
+                  onClick={() => openLinkCheck(source, "web")}
+                  disabled={isDisabled}
+                  className="inline-flex items-center justify-center h-8 px-3 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-[11px] font-medium transition-colors"
+                  title="Profile only — works anywhere"
+                >
+                  Profile
+                </button>
+                <button
+                  onClick={() => openLinkCheck(source, "full")}
+                  disabled={isDisabled}
+                  className="inline-flex items-center justify-center h-8 px-3 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 hover:border-blue-500/50 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-[11px] font-medium text-blue-200 transition-colors"
+                  title="Watch history, likes, subscriptions — needs Vana Desktop"
+                >
+                  Deep
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => openLinkCheck(source, connectLabel)}
+                disabled={isDisabled}
+                className={`inline-flex items-center justify-center h-8 min-w-[88px] gap-1.5 px-3.5 rounded-lg text-xs font-semibold transition-all ${
+                  hasError
+                    ? "border border-amber-500/30 bg-amber-500/10 text-amber-400"
+                    : "bg-cyan-400 text-slate-950 hover:bg-cyan-300 shadow-[0_0_16px_-4px_rgba(34,211,238,0.5)] disabled:opacity-40 disabled:cursor-not-allowed"
+                }`}
+              >
+                {isActiveSource ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    {connectState === "awaiting_approval" ? "Pending…" : "Connecting…"}
+                  </>
+                ) : (
+                  <>
+                    Connect
+                    <ArrowUpRight className="w-3.5 h-3.5" />
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     );
   };
 
@@ -1132,9 +1136,9 @@ export default function PageClient() {
   const gradeColor = GRADE_COLORS[displayGrade] || GRADE_COLORS.D;
   const gradeLabel = GRADE_LABELS[displayGrade] || GRADE_LABELS.D;
 
-  // ── Your Mirror preview — deterministic example built from the same mock
+  // ── Your Reflection preview — deterministic example built from the same mock
   //    data the engine uses in dev, so first-time visitors see a real card. ──
-  const mirror = useMemo(() => {
+  const reflection = useMemo(() => {
     const picks = ["github", "spotify", "instagram"] as const;
     const ids: IdentityData[] = picks.map((sid) => {
       const data = mockData(sid);
@@ -1156,13 +1160,16 @@ export default function PageClient() {
       animate="animate"
       variants={pageVariants}
       className="min-h-dvh bg-[var(--color-bg)] text-white relative overflow-x-hidden isolate"
-      style={{ paddingBottom: "calc(6rem + env(safe-area-inset-bottom))" }}
+      style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
     >
       {/* ── Static Background (Aurora glow, no animation) ── */}
-      <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full bg-blue-600/8 blur-[150px]" />
-        <div className="absolute top-1/3 -left-60 w-[500px] h-[500px] rounded-full bg-cyan-600/5 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 w-[600px] h-[400px] rounded-full bg-cyan-600/5 blur-[150px]" />
+      <div
+        className="pointer-events-none fixed inset-0 -z-10"
+      >
+        <div className="absolute -top-40 left-1/4 w-[800px] h-[500px] rounded-full bg-blue-600/15 blur-[150px]" />
+        <div className="absolute top-1/3 -left-60 w-[500px] h-[500px] rounded-full bg-cyan-600/10 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 w-[600px] h-[400px] rounded-full bg-cyan-600/10 blur-[150px]" />
+        <div className="absolute top-1/4 right-1/4 w-[420px] h-[420px] rounded-full bg-violet-600/10 blur-[140px]" />
         <div
           className="absolute top-0 left-0 w-full h-full"
           style={{
@@ -1170,6 +1177,8 @@ export default function PageClient() {
           }}
         />
       </div>
+
+      {/* ── Global Background: static aurora glow (no particle animation) ── */}
 
       <div className="relative z-10">
         {/* ── Header (Framer-style nav) ── */}
@@ -1186,26 +1195,27 @@ export default function PageClient() {
           >
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16 md:h-[72px]">
-              {/* Logo */}
+              {/* Logo — N mark + ODEA lockup (one-word look) */}
               <button onClick={() => goView("home")} className="flex items-center gap-2.5 shrink-0 min-h-[44px]" aria-label="Nodea home">
                 <AppLogo size={34} />
-                <span className="font-display text-lg font-semibold tracking-tight text-white">Nodea</span>
+                <span className="font-display text-lg font-semibold tracking-tight text-white leading-none">NODEA</span>
               </button>
 
-              {/* Center nav (desktop) */}
+              {/* Center nav (desktop) — same set on every tab */}
               <nav className="hidden md:flex items-center gap-1">
-                {[
-                  { v: "connect", label: "Connect" },
+                {([
+                  { v: "home", label: "Home" },
+                  { v: "card", label: "Reflection" },
                   { v: "home", label: "How it works", anchor: "how" },
-                  { v: "article", label: "Article" },
+                  { v: "home", label: "Privacy", anchor: "privacy" },
                   { v: "standings", label: "Standings" },
-                  { v: "card", label: "Your Mirror" },
-                ].map((item) => (
+                  { v: "settings", label: "Settings" },
+                ] as const).map((item: { v: ViewKey; label: string; anchor?: string }) => (
                   <button
                     key={item.label}
-                    onClick={() => goView(item.v as ViewKey, item.anchor)}
+                    onClick={() => handleNav(item as { v: ViewKey; label: string; anchor?: string })}
                     className={`px-3.5 py-2 rounded-lg text-sm font-medium min-h-[44px] inline-flex items-center transition-colors ${
-                      view === item.v
+                      activeNav === item.label
                         ? "text-[#38BDF8] bg-[#38BDF8]/10"
                         : "text-[#94A3B8] hover:text-[#E2E8F0] hover:bg-white/[0.04]"
                     }`}
@@ -1215,7 +1225,7 @@ export default function PageClient() {
                 ))}
               </nav>
 
-              {/* Right actions */}
+              {/* Right actions — always visible on every tab */}
               <div className="flex items-center gap-3">
                 <div className="hidden sm:flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.07]">
                   <span className="text-emerald-400 font-mono text-sm font-semibold">{connectedCount}</span>
@@ -1226,7 +1236,7 @@ export default function PageClient() {
                 <motion.button
                   whileHover={reducedMotion ? {} : { scale: 1.03, y: -1 }}
                   whileTap={reducedMotion ? {} : { scale: 0.97 }}
-                  onClick={() => goView("connect")}
+                  onClick={() => openConnect()}
                   className="hidden sm:inline-flex items-center justify-center min-h-[40px] gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-shadow duration-300"
                   style={{
                     background: "linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%)",
@@ -1247,7 +1257,7 @@ export default function PageClient() {
               </div>
             </div>
 
-            {/* Mobile dropdown */}
+            {/* Mobile dropdown — same set on every tab */}
             <AnimatePresence>
               {navOpen && (
                 <motion.nav
@@ -1258,18 +1268,19 @@ export default function PageClient() {
                   className="md:hidden overflow-hidden"
                 >
                   <div className="py-3 space-y-1 border-t border-[#94A3B8]/10 bg-[#0B1222]/95">
-                    {[
-                      { v: "connect", label: "Connect" },
+                    {([
+                      { v: "home", label: "Home" },
+                      { v: "card", label: "Reflection" },
                       { v: "home", label: "How it works", anchor: "how" },
-                      { v: "article", label: "Article" },
+                      { v: "home", label: "Privacy", anchor: "privacy" },
                       { v: "standings", label: "Standings" },
-                      { v: "card", label: "Your Mirror" },
-                    ].map((item) => (
+                      { v: "settings", label: "Settings" },
+                    ] as const).map((item: { v: ViewKey; label: string; anchor?: string }) => (
                       <button
                         key={item.label}
-                        onClick={() => goView(item.v as ViewKey, item.anchor)}
+                        onClick={() => handleNav(item as { v: ViewKey; label: string; anchor?: string })}
                         className={`w-full text-left px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
-                          view === item.v
+                          activeNav === item.label
                             ? "text-[#38BDF8] bg-[#38BDF8]/10"
                             : "text-[#94A3B8] hover:text-[#E2E8F0] hover:bg-white/[0.04]"
                         }`}
@@ -1278,7 +1289,7 @@ export default function PageClient() {
                       </button>
                     ))}
                     <button
-                      onClick={() => goView("connect")}
+                      onClick={() => openConnect()}
                       className="w-full mt-2 px-3 py-3 rounded-lg text-sm font-semibold text-white"
                       style={{ background: "linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%)" }}
                     >
@@ -1295,128 +1306,174 @@ export default function PageClient() {
         <main className={`mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ${view === "article" ? "py-0" : "py-12 md:py-20 lg:py-28"}`}>
           {view === "home" && (
             <>
-          {/* ── Hero (Framer-style) ── */}
+          {/* ── Hero (card-as-hero · konsep C) ── */}
           <motion.section
             id="hero"
             variants={sectionVariants}
             initial="initial"
             animate="animate"
-            className="relative text-center mb-20 md:mb-28 pt-16 md:pt-24"
+            className="relative mb-20 md:mb-28 pt-16 md:pt-24"
           >
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.7, ease: easeOut }}
-              className="font-display-hero text-5xl md:text-7xl lg:text-[5.2rem] font-semibold tracking-tighter leading-[1.02] mb-6"
-            >
-              <span className="gradient-white">You're more interesting</span>
-              <br />
-              <span className="gradient-brand">than your bio.</span>
-            </motion.h1>
+            <div className="grid lg:grid-cols-2 gap-14 md:gap-16 items-center max-w-6xl mx-auto text-left">
+              {/* Left: copy + CTA */}
+              <div>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15, duration: 0.6, ease: easeOut }}
+                  className="font-mono text-xs md:text-sm uppercase tracking-[0.18em] text-cyan-300/90 mb-5"
+                >
+                  Your data. Your reflection.
+                </motion.div>
+                <motion.h1
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2, duration: 0.7, ease: easeOut }}
+                  className="font-display-hero text-5xl md:text-6xl lg:text-7xl font-semibold tracking-tighter leading-[1.04] mb-6"
+                >
+                  Meet <span className="gradient-brand">yourself</span>
+                  <br />
+                  in your data.
+                </motion.h1>
+                <motion.p
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3, duration: 0.7, ease: easeOut }}
+                  className="tracking-ui text-lg md:text-xl text-white/50 max-w-lg leading-relaxed text-balance"
+                >
+                  Connect the accounts you already own. Nodea reads your real
+                  activity — then shows you the{" "}
+                  <span className="text-white/85">person behind it</span>. Not a quiz,
+                  a reflection.
+                </motion.p>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.7, ease: easeOut }}
-              className="tracking-ui text-lg md:text-xl lg:text-2xl text-white/50 max-w-3xl mx-auto leading-relaxed text-balance"
-            >
-              Nodea connects the accounts you already own and reads your real
-              activity — then tells you <span className="text-white/85">what it means</span>. Insights, patterns,
-              and recommendations built from your <span className="text-white/85">actual behavior</span>, not a questionnaire.
-            </motion.p>
+                {/* CTA row */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4, duration: 0.6, ease: easeOut }}
+                  className="mt-9 flex flex-col sm:flex-row items-start sm:items-center gap-3"
+                >
+                  <motion.button
+                    whileHover={reducedMotion ? {} : { scale: 1.04, y: -2 }}
+                    whileTap={reducedMotion ? {} : { scale: 0.97 }}
+                    onClick={() => openConnect()}
+                    className="group inline-flex items-center gap-2.5 px-7 py-3.5 rounded-2xl text-base font-semibold text-white transition-shadow duration-300"
+                    style={{
+                      background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)",
+                      boxShadow: "0 10px 40px -10px rgba(79,140,255,0.6)",
+                    }}
+                  >
+                    Meet yourself
+                    <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
+                  </motion.button>
+                </motion.div>
 
-            {/* CTA row */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.6, ease: easeOut }}
-              className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3"
-            >
-              <motion.button
-                whileHover={reducedMotion ? {} : { scale: 1.04, y: -2 }}
-                whileTap={reducedMotion ? {} : { scale: 0.97 }}
-                onClick={() => goView("connect")}
-                className="group inline-flex items-center gap-2.5 px-7 py-3.5 rounded-2xl text-base font-semibold text-white transition-shadow duration-300"
-                style={{
-                  background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)",
-                  boxShadow: "0 10px 40px -10px rgba(79,140,255,0.6)",
-                }}
-              >
-                Connect your accounts
-                <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
-              </motion.button>
-            </motion.div>
-
-            {/* Trust row */}
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.55 }}
-              className="mt-6 text-xs md:text-sm text-white/35 flex flex-wrap items-center justify-center gap-x-5 gap-y-2"
-            >
-              <span className="inline-flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" /> We only read what you approve</span>
-              <span className="inline-flex items-center gap-1.5"><Lock className="w-3.5 h-3.5" /> No wallet needed</span>
-              <span className="inline-flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5" /> Revoke anytime</span>
-            </motion.p>
-
-            {/* Source orbit — "You're more interesting than your bio." visual */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.85 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.5, duration: 0.9, ease: easeOut }}
-              className="mt-12 md:mt-14"
-            >
-              <SourceOrbit size={264} />
-            </motion.div>
-
-            {/* Product window (Framer-style desktop mockup) */}
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6, duration: 0.8, ease: easeOut }}
-              className="hidden lg:block mt-16 relative max-w-4xl mx-auto"
-            >
-              <div className="rounded-2xl border border-white/[0.08] bg-(--color-bg-elevated)/90 backdrop-blur-xl overflow-hidden shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]">
-                {/* window chrome */}
-                <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06] bg-white/[0.02]">
-                  <span className="w-3 h-3 rounded-full bg-red-500/70" />
-                  <span className="w-3 h-3 rounded-full bg-yellow-500/70" />
-                  <span className="w-3 h-3 rounded-full bg-green-500/70" />
-                  <div className="ml-4 flex items-center gap-2 px-3 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06] text-white/40 text-xs">
-                    <Lock className="w-3 h-3" /> nodea.app
-                  </div>
-                </div>
-                <div className="grid grid-cols-5 gap-3 p-5">
-                  {DATA_SOURCES.map((src, i) => (
-                    <motion.div
-                      key={src.id}
-                      initial={{ opacity: 0, y: 15 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.7 + i * 0.08, duration: 0.5 }}
-                      className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-colors ${
-                        onboardedSources.has(src.id)
-                          ? "bg-emerald-500/[0.06] border-emerald-500/25"
-                          : "bg-white/[0.02] border-white/[0.06]"
-                      }`}
-                    >
-                      <BrandIcon id={src.icon} size={26} />
-                      <span className="text-[11px] text-white/60">{src.name}</span>
-                      {onboardedSources.has(src.id) ? (
-                        <CheckCircle className="w-4 h-4 text-emerald-400" />
-                      ) : null}
-                    </motion.div>
-                  ))}
-                </div>
+                {/* Trust row */}
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.55 }}
+                  className="mt-6 text-xs md:text-sm text-white/35 flex flex-wrap items-center gap-x-5 gap-y-2"
+                >
+                  <span className="inline-flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" /> We only read what you approve</span>
+                  <span className="inline-flex items-center gap-1.5"><Lock className="w-3.5 h-3.5" /> No wallet needed</span>
+                  <span className="inline-flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5" /> Revoke anytime</span>
+                </motion.p>
               </div>
-              {/* glow under window */}
-              <div className="absolute -inset-x-10 -bottom-10 h-24 bg-gradient-to-r from-blue-600/20 via-cyan-600/20 to-blue-500/20 blur-3xl -z-10" />
-            </motion.div>
+
+              {/* Right: identity card — the star (built from demo reflection, same engine as real card) */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.94, y: 24 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ delay: 0.45, duration: 0.8, ease: easeOut }}
+                className="relative max-w-md mx-auto w-full lg:ml-auto"
+              >
+                <div className="relative rounded-2xl border border-[--color-border-strong] bg-gradient-to-br from-[#223354]/60 via-[#16213B]/70 to-[#0F172A]/85 backdrop-blur-xl shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7),0_0_40px_-10px_rgba(79,140,255,0.4)] overflow-hidden p-7">
+                  {/* top radial sheen */}
+                  <div
+                    className="pointer-events-none absolute inset-0"
+                    style={{
+                      background:
+                        "radial-gradient(ellipse at 80% -20%, rgba(0,212,255,0.12) 0%, transparent 55%)",
+                    }}
+                  />
+                  <div className="relative flex items-center justify-between mb-6">
+                    <span className="font-mono text-[11px] text-white/40 tracking-wider">
+                      nodea.app / your reflection
+                    </span>
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-cyan-300">
+                      ● Live
+                    </span>
+                  </div>
+
+                  {/* score ring + meta */}
+                  <div className="relative flex items-center gap-5 mb-6">
+                    <div
+                      className="w-[104px] h-[104px] rounded-full shrink-0 grid place-items-center"
+                      style={{
+                        background:
+                          "conic-gradient(#4F8CFF 0deg, #00D4FF 245deg, rgba(255,255,255,0.08) 245deg)",
+                        boxShadow: "0 0 24px -4px rgba(79,140,255,0.4)",
+                      }}
+                    >
+                      <div className="w-[82px] h-[82px] rounded-full bg-[#0F172A] border border-white/[0.06] grid place-items-center">
+                        <span className="font-display font-semibold text-3xl tracking-tighter text-white">
+                          {reflection.score.total}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-cyan-300 mb-1">
+                        Grade {reflection.score.grade} — {gradeLabel}
+                      </div>
+                      <div className="font-display text-xl font-semibold tracking-tight text-white leading-tight">
+                        {reflection.card ? reflection.card.primaryArchetype.title : "Your reflection, forming"}
+                      </div>
+                      <div className="mt-1 text-[13px] text-white/45 leading-relaxed">
+                        {reflection.score.verdict}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* trait statement */}
+                  {reflection.card && (
+                    <div className="relative border-t border-white/[0.08] pt-5">
+                      <div className="text-[26px] leading-none mb-2">
+                        {reflection.card.primaryArchetype.emoji}
+                      </div>
+                      <div className="font-display text-lg font-semibold tracking-tight text-white mb-1.5">
+                        {reflection.card.primaryArchetype.tagline}
+                      </div>
+                      <p className="text-[13.5px] text-white/50 leading-relaxed">
+                        {reflection.card.primaryArchetype.fitRationale}
+                      </p>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <span className="inline-flex items-center rounded-lg border border-blue-500/25 bg-blue-500/10 px-3 py-1 text-[11px] font-medium text-blue-300">
+                          3 / 7 Connected
+                        </span>
+                        {reflection.card.alternatives.slice(0, 2).map((a) => (
+                          <span
+                            key={a.title}
+                            className="inline-flex items-center rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1 text-[11px] font-medium text-white/50"
+                          >
+                            {a.emoji} {a.title}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {/* glow under card */}
+                <div className="absolute -inset-x-10 -bottom-10 h-24 bg-gradient-to-r from-blue-600/20 via-cyan-600/20 to-blue-500/20 blur-3xl -z-10" />
+              </motion.div>
+            </div>
           </motion.section>
 
-          {/* ── Your Mirror — example preview (built from the same engine that
+          {/* ── Your Reflection — example preview (built from the same engine that
               powers your real card, shown before you connect anything) ── */}
           <motion.section
-            id="mirror-preview"
+            id="reflection-preview"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
@@ -1436,103 +1493,34 @@ export default function PageClient() {
               </p>
             </div>
 
-            {mirror.card ? (
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1, duration: 0.5 }}
-                className="grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-4xl mx-auto"
-              >
-                {/* Score tile */}
-                <motion.div
-                  className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 glass glass-border"
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.15, duration: 0.5 }}
-                >
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 rounded-xl bg-blue-500/15">
-                      <BarChart2 className="w-5 h-5 text-blue-300" />
-                    </div>
-                    <div>
-                      <div className="font-medium text-white">Your Nodea Score</div>
-                      <div className="tracking-ui text-[10px] uppercase tracking-wider text-white/35">
-                        Built from connected activity, not answers
-                      </div>
-                    </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto mt-8">
+              {[
+                { icon: BarChart2, title: "Score", desc: "0–100 built from five signals in your real activity." },
+                { icon: Brain, title: "Archetype", desc: "A personality pattern your data reveals — not one you pick." },
+                { icon: BookOpen, title: "Story", desc: "A short narrative that ties your habits into who you are." },
+              ].map((f) => (
+                <div key={f.title} className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5 text-center">
+                  <div className="inline-flex p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 mb-3">
+                    <f.icon className="w-5 h-5 text-cyan-300" />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-3 rounded-xl bg-white/[0.03] border border-white/[0.05]">
-                      <div className="font-display font-semibold text-3xl text-white">{mirror.score.total}</div>
-                      <div className="text-[10px] uppercase tracking-wider text-white/35">out of 100</div>
-                    </div>
-                    <div className="text-center p-3 rounded-xl bg-white/[0.03] border border-white/[0.05]">
-                      <div className="font-display font-semibold text-3xl" style={{ color: gradeColor }}>
-                        Grade {mirror.score.grade}
-                      </div>
-                      <div className="text-[10px] uppercase tracking-wider text-white/35">{gradeLabel}</div>
-                    </div>
-                  </div>
-                  <div className="mt-4 text-xs text-white/40 leading-relaxed">{mirror.score.verdict}</div>
-                </motion.div>
-
-                {/* Identity card preview */}
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.2, duration: 0.5 }}
-                  className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 glass glass-border flex flex-col"
-                >
-                  <div className="flex items-center gap-2.5 mb-3">
-                    <span className="text-2xl">{mirror.card.primaryArchetype.emoji}</span>
-                    <h3 className="font-display text-lg font-semibold text-white">
-                      {mirror.card.primaryArchetype.title}
-                    </h3>
-                  </div>
-                  <p className="text-cyan-300 font-medium text-sm mb-2">
-                    {mirror.card.primaryArchetype.tagline}
-                  </p>
-                  <p className="text-xs text-white/50 leading-relaxed flex-1">
-                    {mirror.card.primaryArchetype.fitRationale}
-                  </p>
-                  {mirror.card.alternatives.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-white/[0.06] space-y-1">
-                      <div className="text-[10px] uppercase tracking-wider text-white/35">
-                        Also fits
-                      </div>
-                      {mirror.card.alternatives.map((a) => (
-                        <div key={a.title} className="flex items-center gap-1.5 text-xs text-white/55">
-                          <span>{a.emoji}</span>
-                          <span>{a.title}</span>
-                          <span className="text-white/25">· {a.source}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </motion.div>
-              </motion.div>
-            ) : (
-              <div className="text-center py-8 text-white/40 text-sm max-w-md mx-auto">
-                Connect any account to generate your real mirror. While you read this,
-                your pattern is already waiting behind the connect button.
-              </div>
-            )}
+                  <div className="font-display text-sm font-semibold text-white mb-1">{f.title}</div>
+                  <p className="text-xs text-white/45 leading-relaxed">{f.desc}</p>
+                </div>
+              ))}
+            </div>
 
             <div className="mt-8 text-center">
               <motion.button
                 whileHover={reducedMotion ? {} : { scale: 1.02, y: -1 }}
                 whileTap={reducedMotion ? {} : { scale: 0.98 }}
-                onClick={() => goView("connect")}
+                onClick={() => openConnect()}
                 className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium text-white transition-all"
                 style={{
                   background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)",
                   boxShadow: "0 0 20px -4px rgba(79,140,255,0.5)",
                 }}
               >
-                Build your real mirror
+                Build your real reflection
                 <ArrowRight className="w-4 h-4" />
               </motion.button>
             </div>
@@ -1540,6 +1528,7 @@ export default function PageClient() {
 
           {/* ── What you'll get — per-source output preview ── */}
           <motion.section
+            id="sources"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
@@ -1559,20 +1548,7 @@ export default function PageClient() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
-              {DATA_SOURCES.map((source) => {
-                const isConnected = onboardedSources.has(source.id);
-                const isActiveSource = activeSource?.id === source.id;
-                const isConnecting =
-                  isActiveSource &&
-                  (connectState === "requesting" ||
-                    connectState === "awaiting_approval" ||
-                    connectState === "checking" ||
-                    connectState === "reading");
-                const hasError = isActiveSource && connectState === "error";
-                const isBusy = connectState !== "idle" && connectState !== "error";
-                const isDesktopOnly = source.platform === "desktop";
-                const isHybrid = source.platform === "hybrid";
-                const isDisabledOnMobile = isDesktopOnly && !isDesktop;
+              {DATA_SOURCES.filter((s) => s.id !== "chatgpt").map((source) => {
                 return (
                   <motion.div
                     key={source.id}
@@ -1580,15 +1556,7 @@ export default function PageClient() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.4 }}
-                    className={`group relative flex h-full flex-col rounded-2xl border p-5 transition-all duration-300 ${
-                      isConnected
-                        ? "border-emerald-500/25 hover:border-emerald-500/45"
-                        : isDisabledOnMobile
-                        ? "border-white/[0.08] opacity-50"
-                        : hasError
-                        ? "border-amber-500/30 hover:border-amber-500/50"
-                        : "border-white/[0.1] hover:border-white/[0.2]"
-                    }`}
+                    className="group relative flex h-full flex-col rounded-2xl border border-white/[0.1] p-5 transition-all duration-300 hover:border-white/[0.2]"
                     style={{
                       background:
                         "linear-gradient(135deg, rgba(79,140,255,0.32) 0%, rgba(0,212,255,0.32) 100%)",
@@ -1602,70 +1570,24 @@ export default function PageClient() {
                       <div className="min-w-0 flex-1 pt-0.5">
                         <h3 className="font-medium text-white text-sm truncate flex items-center gap-2">
                           {source.name}
-                          {isConnected && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-400">
-                              <Check className="w-3 h-3" /> Connected
-                            </span>
-                          )}
                         </h3>
                         <p className="text-[11px] text-cyan-300/80 truncate font-medium">{source.dna}</p>
                       </div>
                     </div>
                     <p className="mt-2.5 text-[13px] text-white/55 leading-relaxed line-clamp-3 flex-1">
-                      {hasError ? (
-                        <span className="text-amber-400/80">Connection failed. Try again or cancel.</span>
-                      ) : (
-                        source.outputSummary
-                      )}
+                      {source.outputSummary}
                     </p>
-                    <div className="mt-4 flex items-center justify-end gap-2">
-                      {isConnected ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-1.5 text-[11px] font-medium text-emerald-400">
-                          <CheckCircle className="w-3.5 h-3.5" /> Connected
-                        </span>
-                      ) : isConnecting ? (
-                        <>
-                          <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-500/25 bg-blue-500/10 px-3 py-1.5 text-[11px] font-medium text-blue-300">
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            {connectState === "awaiting_approval" ? "Waiting for approval…" : "Connecting…"}
-                          </span>
-                          <button
-                            onClick={cancelConnect}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/30 px-3 py-1.5 text-[11px] font-medium text-red-400 hover:bg-red-500/10 transition-colors"
-                          >
-                            <X className="w-3.5 h-3.5" /> Cancel
-                          </button>
-                        </>
-                      ) : hasError ? (
-                        <>
-                          <button
-                            onClick={() => openLinkCheck(source, isDesktopOnly || isHybrid ? "full" : "web")}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/30 px-3 py-1.5 text-[11px] font-medium text-amber-400 hover:bg-amber-500/10 transition-colors"
-                          >
-                            <RotateCcw className="w-3.5 h-3.5" /> Try again
-                          </button>
-                          <button
-                            onClick={cancelConnect}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-[11px] font-medium text-white/50 hover:bg-white/5 transition-colors"
-                          >
-                            <X className="w-3.5 h-3.5" /> Cancel
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          onClick={() => openLinkCheck(source, isDesktopOnly || isHybrid ? "full" : "web")}
-                          disabled={isBusy || isDisabledOnMobile}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-cyan-400/30 px-4 py-2.5 text-sm font-medium text-cyan-300 hover:bg-cyan-400/10 hover:border-cyan-400/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <Link2 className="w-3.5 h-3.5" /> Connect
-                          <ArrowUpRight className="w-3 h-3 opacity-60" />
-                        </button>
-                      )}
+                    <div className="mt-4 flex items-center justify-between gap-2">
+                      {renderSourceActions(source)}
                     </div>
                     </div>
                   </motion.div>
                 );
               })}
+            </div>
+
+            <div className="mt-8 text-center">
+              <p className="text-xs text-white/35">Connect straight from each card — no separate tab needed.</p>
             </div>
           </motion.section>
 
@@ -1694,7 +1616,7 @@ export default function PageClient() {
             </div>
             <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
-                { icon: Layers, title: "Multi-source", desc: "Seven real platforms, one unified picture built from live activity." },
+                { icon: Layers, title: "Multi-source", desc: "Six real platforms, one unified picture built from live activity." },
                 { icon: Lock, title: "Private by design", desc: "You approve exactly what we read, and you can revoke anytime." },
                 { icon: Share2, title: "Portable", desc: "One card you can share, compare and keep across every device." },
               ].map((f) => (
@@ -1711,276 +1633,7 @@ export default function PageClient() {
             </>
           )}
 
-          {view === "connect" && (
-            <div className="pt-8 md:pt-12">
-          {/* ── Status / Error / Referral ── */}
-          <AnimatePresence mode="wait">
-            {statusMessage && (
-              <motion.div
-                key={connectState}
-                initial={{ opacity: 0, y: -20, height: 0 }}
-                animate={{ opacity: 1, y: 0, height: "auto" }}
-                exit={{ opacity: 0, y: -20, height: 0 }}
-                transition={{ duration: 0.3, ease: easeOut }}
-                className={`mb-8 p-4 rounded-2xl text-sm border flex items-start gap-3 ${
-                  connectState === "error"
-                    ? "bg-red-500/10 border-red-500/20 text-red-400"
-                    : connectState === "done"
-                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                    : "bg-blue-500/10 border-blue-500/20 text-blue-400"
-                }`}
-              >
-                {connectState === "error" && <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />}
-                {connectState === "done" && <CheckCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />}
-                {connectState !== "error" && connectState !== "done" && <Loader2 className="w-5 h-5 mt-0.5 flex-shrink-0 animate-spin text-blue-400" />}
-                <span className="flex-1">{statusMessage}</span>
-                {(connectState === "awaiting_approval" || connectState === "requesting") && (
-                  <button
-                    onClick={cancelConnect}
-                    className="inline-flex items-center justify-center min-h-[36px] px-3 py-1 rounded-lg text-xs font-medium text-white/40 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-colors flex-shrink-0"
-                  >
-                    Cancel
-                  </button>
-                )}
-              </motion.div>
-            )}
-
-            {error && !statusMessage && (
-              <motion.div
-                initial={{ opacity: 0, y: -20, height: 0 }}
-                animate={{ opacity: 1, y: 0, height: "auto" }}
-                exit={{ opacity: 0, y: -20, height: 0 }}
-                className="mb-8 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm flex items-start gap-3"
-              >
-                <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                <span>{error}</span>
-              </motion.div>
-            )}
-
-            {connectState === "awaiting_approval" && !popupRef.current && (
-              <motion.div
-                initial={{ opacity: 0, y: -20, height: 0 }}
-                animate={{ opacity: 1, y: 0, height: "auto" }}
-                className="mb-8 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl text-sm"
-              >
-                <div className="flex items-center gap-2 text-yellow-400 font-medium mb-2">
-                  <AlertCircle className="w-5 h-5" />
-                  Popup was blocked — approve in a new tab instead
-                </div>
-                <p className="text-white/60 mb-3">
-                  Click the link below, log in to Vana, and approve the request.{" "}
-                  <strong>Keep both tabs open</strong> until this page says connected.
-                </p>
-                <a
-                  href={`https://app.vana.org/data-connection-requests/${activeRequestId}?mode=page`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center justify-center min-h-[44px] gap-2 px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 text-yellow-300 rounded-xl font-medium transition-colors"
-                >
-                  Open Vana approval
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-                <button
-                  onClick={cancelConnect}
-                  className="inline-flex items-center justify-center min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-medium text-white/40 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-colors ml-3"
-                >
-                  Cancel
-                </button>
-              </motion.div>
-            )}
-
-            {connectState === "awaiting_approval" && popupRef.current && (
-              <motion.div
-                initial={{ opacity: 0, y: -20, height: 0 }}
-                animate={{ opacity: 1, y: 0, height: "auto" }}
-                className="mb-8 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl text-sm"
-              >
-                <div className="flex items-center gap-2 text-blue-300 font-medium mb-1">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Waiting for approval…
-                </div>
-                <p className="text-white/60">
-                  Approve access in the Vana window.{" "}
-                  <strong>Keep both tabs open</strong> until it says connected.
-                </p>
-                <button
-                  onClick={cancelConnect}
-                  className="inline-flex items-center justify-center min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-medium text-white/40 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-colors mt-3"
-                >
-                  Cancel
-                </button>
-              </motion.div>
-            )}
-
-            {generating && (
-              <motion.div
-                initial={{ opacity: 0, y: -20, height: 0 }}
-                animate={{ opacity: 1, y: 0, height: "auto" }}
-                className="mb-8 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl text-blue-400 text-sm flex items-center gap-2"
-              >
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Generating your Nodea card…</span>
-              </motion.div>
-            )}
-
-            {refFrom && (
-              <motion.div
-                initial={{ opacity: 0, y: -20, height: 0, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, height: "auto", scale: 1 }}
-                className="mb-8 p-4 rounded-2xl text-sm flex items-center gap-3 border bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/20 text-amber-200"
-              >
-                <motion.div
-                  animate={{ rotate: [0, 5, -5, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                  className="p-2 rounded-xl bg-amber-500/20"
-                >
-                  <Trophy className="w-5 h-5" />
-                </motion.div>
-                <div>
-                  <p className="font-medium">
-                    🏆 You came from a Nodea Card{" "}
-                    <span className="font-semibold gradient-brand">Grade {refFrom}</span> —
-                    connect your data and try to beat their score!
-                  </p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* ── Main Grid ── */}
-          <motion.div
-            id="connect"
-            variants={sectionVariants}
-            initial="initial"
-            animate="animate"
-            className="scroll-mt-24 grid grid-cols-1 gap-8 lg:gap-10 items-start max-w-5xl mx-auto w-full"
-          >
-            {/* Left: Data Sources */}
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5 }}
-                className="flex items-center gap-3 mb-8"
-              >
-                <div className="font-display w-10 h-10 rounded-2xl bg-blue-500/15 border border-blue-500/20 flex items-center justify-center text-sm font-semibold text-blue-300">
-                  1
-                </div>
-                <div>
-                  <h2 className="font-display text-lg font-semibold tracking-tight leading-tight">Connect data sources</h2>
-                  <p className="tracking-ui text-xs text-white/40 mt-0.5">Pick any accounts — your mirror gets deeper with each one</p>
-                </div>
-                <motion.div
-                  animate={{ scale: [1, 1.02, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="ml-auto flex items-center gap-1.5 text-xs text-white/40 shrink-0 px-3 py-1.5 rounded-xl bg-white/[0.02] border border-white/[0.04]"
-                >
-                  <span className="font-semibold text-white/80">{connectedCount}</span>
-                  <span className="text-white/20">/</span>
-                  <span>{totalSources}</span>
-                  <TrendingUp className="w-4 h-4 text-emerald-400/70" />
-                </motion.div>
-              </motion.div>
-
-              <motion.div
-                variants={{ animate: { transition: { staggerChildren: 0.05 } } }}
-                initial="initial"
-                animate="animate"
-                className="space-y-8"
-              >
-                {/* Web Sources */}
-                <motion.section
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <div className="flex items-center gap-2.5 mb-4">
-                    <motion.span
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{ duration: 1.5, repeat: Infinity }}
-                      className="w-2.5 h-2.5 rounded-full bg-emerald-400"
-                    />
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-white/45">Instant Connect</span>
-                    <span className="ml-auto text-[11px] text-white/25">
-                      {webSources.filter((s) => onboardedSources.has(s.id)).length}/{webSources.length}
-                    </span>
-                  </div>
-                  <motion.div
-                    className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-                    variants={{ animate: { transition: { staggerChildren: 0.06 } } }}
-                  >
-                    {webSources.map((source, i) => (
-                      <motion.div key={source.id} variants={cardVariants} custom={i}>
-                        {renderSourceCard(source, i)}
-                      </motion.div>
-                    ))}
-                  </motion.div>
-                </motion.section>
-
-                {/* Desktop Sources */}
-                <motion.section
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.1 }}
-                >
-                  <div className="flex items-center gap-2.5 mb-4 flex-wrap">
-                    <motion.span
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
-                      className="w-2.5 h-2.5 rounded-full bg-orange-400"
-                    />
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-white/45">Deep Data</span>
-                    <span className="ml-auto text-[11px] text-white/25">
-                      {desktopSources.filter((s) => onboardedSources.has(s.id)).length}/{desktopSources.length}
-                    </span>
-                    {!isDesktop && (
-                      <span className="text-[10px] text-white/30 font-normal hidden sm:inline flex items-center gap-1">
-                        <Monitor className="w-3 h-3" />
-                        Install on computer
-                      </span>
-                    )}
-                  </div>
-                  <motion.div
-                    className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-                    variants={{ animate: { transition: { staggerChildren: 0.06 } } }}
-                  >
-                    {desktopSources.map((source, i) => (
-                      <motion.div key={source.id} variants={cardVariants} custom={i}>
-                        {renderSourceCard(source, i)}
-                      </motion.div>
-                    ))}
-                    {!isDesktop && (
-                      <motion.div
-                        variants={cardVariants}
-                        className="md:col-span-2 p-5 rounded-2xl border border-dashed border-white/[0.06] bg-white/[0.01]"
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 rounded-xl bg-orange-500/15 shrink-0">
-                            <Monitor className="w-5 h-5 text-orange-400" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-white/80 mb-1">Unlock Deep Data with Vana Desktop</p>
-                            <p className="text-white/40 text-sm leading-relaxed">
-                              Steam games & playtime, YouTube watch history, ChatGPT conversations, Spotify listening history.
-                              <br />
-                              <span className="text-white/30 mt-2 inline-block">
-                                Install Vana Desktop at vana.org/desktop → connect accounts → come back and hit Connect.
-                              </span>
-                            </p>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </motion.div>
-                </motion.section>
-              </motion.div>
-
-              {/* Left panel close */}
-            </motion.div>
-            {/* Grid close */}
-          </motion.div>
-          </div>
-        )}
+          {/* Tab Connect dihapus — koneksi full via card home */}
 
           {view === "home" && (
             <>
@@ -2017,9 +1670,9 @@ export default function PageClient() {
                     },
                     {
                       num: "03",
-                      icon: ArrowRight,
-                      title: "Save it, and it travels",
-                      desc: "Persist your Nodea card to mainnet. Other apps can verify your identity and score without repeating setup.",
+                      icon: Share2,
+                      title: "Share & compare",
+                      desc: "Your Nodea Card is a shareable link — compare scores, spark conversations, and see how your digital self stacks up. No wallet, no friction.",
                     },
                   ].map((step, i) => (
                     <motion.div
@@ -2198,8 +1851,8 @@ export default function PageClient() {
                   <motion.div className="p-4 rounded-xl border border-white/[0.06] bg-white/[0.01]">
                     <h3 className="text-xs font-semibold text-white/50 mb-2">Delete or revoke</h3>
                     <ul className="space-y-1 text-xs text-white/45">
-                      <li>Disconnect any source anytime — its data leaves your mirror immediately.</li>
-                      <li>Clear localStorage ("Forget my mirror") to wipe the score.</li>
+                      <li>Disconnect any source anytime — its data leaves your reflection immediately.</li>
+                      <li>Clear localStorage ("Forget my reflection") to wipe the score.</li>
                       <li>Revoke the Vana OAuth grant from your account to remove access at the source.</li>
                     </ul>
                   </motion.div>
@@ -2232,7 +1885,7 @@ export default function PageClient() {
                   {[
                     {
                       q: "Do I need a wallet?",
-                      a: "No. Connect with a normal OAuth login. Your Nodea Score stays in your browser until you choose to sign it on-chain.",
+                      a: "No. Connect with a normal OAuth login. Your Nodea Score stays in your browser — fully private, fully yours.",
                     },
                     {
                       q: "Is this anonymous?",
@@ -2240,7 +1893,7 @@ export default function PageClient() {
                     },
                     {
                       q: "Can I delete my data?",
-                      a: "Yes. Disconnect any source, or clear browser storage with 'Forget my mirror'. If you signed on-chain, you keep the keys and can ignore us forever.",
+                      a: "Yes. Disconnect any source, or clear browser storage with 'Forget my reflection' — your data, your control.",
                     },
                     {
                       q: "Why does some data require Vana Desktop?",
@@ -2258,10 +1911,7 @@ export default function PageClient() {
                       q: "Is this a personality test?",
                       a: "Not a questionnaire-based one. Nodea scores who you already are, from what you've already done — not how you describe yourself.",
                     },
-                    {
-                      q: "What does the on-chain registration do?",
-                      a: "It anchors your Score + identity card to your wallet so other apps can verify them without you reconnecting your accounts. Opt-in, revocable, not required to use Nodea.",
-                    },
+
                     {
                       q: "Is my score 'real' / comparable?",
                       a: "Your raw score is personal. The grade (S–D) and relative rank on the Vana Cup leaderboard are what we compare across users.",
@@ -2307,14 +1957,14 @@ export default function PageClient() {
                   <motion.button
                     whileHover={reducedMotion ? {} : { scale: 1.02, y: -1 }}
                     whileTap={reducedMotion ? {} : { scale: 0.98 }}
-                    onClick={() => goView("connect")}
+                    onClick={() => openConnect()}
                     className="inline-flex items-center justify-center gap-2 px-5 py-2 rounded-xl text-sm font-medium text-white transition-all"
                     style={{
                       background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)",
                       boxShadow: "0 0 20px -4px rgba(79,140,255,0.5)",
                     }}
                   >
-                    Build your real mirror
+                    Build your real reflection
                     <ArrowRight className="w-4 h-4" />
                   </motion.button>
                 </div>
@@ -2427,6 +2077,103 @@ export default function PageClient() {
 
           {view === "card" && (
             <>
+              {/* Dashboard heading (PRD #14-16) */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="text-center mb-8"
+              >
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.07] bg-white/[0.02] text-[11px] uppercase tracking-widest text-white/40 mb-4">
+                  <AppLogo size={14} /> Your Nodea
+                </div>
+                <h1 className="font-display-hero text-3xl md:text-5xl font-semibold tracking-tighter text-white">
+                  What did Nodea <span className="gradient-brand">discover</span> about you?
+                </h1>
+                <p className="mt-4 text-white/45 text-sm md:text-base max-w-xl mx-auto">
+                  Your Score, identity and insights — built from real connected activity, not questionnaires.
+                </p>
+              </motion.div>
+
+              {/* In-Reflection sub-nav (kept out of the global header on purpose) */}
+              <div className="flex items-center justify-center gap-2 mb-8">
+                {([
+                  { v: "card", label: "Overview" },
+                  { v: "identity", label: "Identity" },
+                  { v: "insights", label: "Insights" },
+                ] as const).map((item: { v: ViewKey; label: string }) => (
+                  <button
+                    key={item.label}
+                    onClick={() => goView(item.v)}
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                      view === item.v
+                        ? "text-[#38BDF8] bg-[#38BDF8]/10"
+                        : "text-[#94A3B8] hover:text-[#E2E8F0] hover:bg-white/[0.04]"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Empty-state banner (PRD #35) */}
+              {identities.length === 0 ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15, duration: 0.5 }}
+                  className="mb-6 p-6 rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.01] text-center"
+                >
+                  <div className="text-white/80 font-display text-lg font-semibold">Your Nodea starts with one source.</div>
+                  <p className="mt-2 text-white/40 text-sm">Connect an account to discover your digital identity.</p>
+                  <motion.button
+                    whileHover={reducedMotion ? {} : { scale: 1.03, y: -1 }}
+                    whileTap={reducedMotion ? {} : { scale: 0.97 }}
+                    onClick={() => openConnect()}
+                    className="mt-5 inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold text-white transition-shadow duration-300"
+                    style={{ background: "linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%)", boxShadow: "0 2px 12px -4px rgba(59,130,246,0.5)" }}
+                  >
+                    <Plus className="w-4 h-4" /> Connect an account
+                  </motion.button>
+                </motion.div>
+              ) : identities.length === 1 ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15, duration: 0.5 }}
+                  className="mb-6 p-4 rounded-2xl border border-white/[0.06] bg-white/[0.02] flex flex-wrap items-center justify-between gap-3"
+                >
+                  <div className="text-white/70 font-medium text-sm">Your Nodea is taking shape.</div>
+                  <motion.button
+                    whileHover={reducedMotion ? {} : { scale: 1.03, y: -1 }}
+                    whileTap={reducedMotion ? {} : { scale: 0.97 }}
+                    onClick={() => openConnect()}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white transition-shadow duration-300"
+                    style={{ background: "linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%)" }}
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add another source
+                  </motion.button>
+                </motion.div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15, duration: 0.5 }}
+                  className="mb-6 p-4 rounded-2xl border border-white/[0.06] bg-white/[0.02] flex flex-wrap items-center justify-between gap-3"
+                >
+                  <div className="text-white/70 font-medium text-sm">Your Nodea is becoming richer.</div>
+                  <motion.button
+                    whileHover={reducedMotion ? {} : { scale: 1.03, y: -1 }}
+                    whileTap={reducedMotion ? {} : { scale: 0.97 }}
+                    onClick={() => openConnect()}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white transition-shadow duration-300"
+                    style={{ background: "linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%)" }}
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add another source
+                  </motion.button>
+                </motion.div>
+              )}
+
               {/* Instruction Copy (Patina-style) */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -2475,7 +2222,7 @@ export default function PageClient() {
                     {generating
                       ? "Generating…"
                       : identities.length > 0
-                      ? `Generate Your Mirror${identities.length > 1 ? ` (${identities.length} sources)` : ""}`
+                      ? `Generate Your Reflection${identities.length > 1 ? ` (${identities.length} sources)` : ""}`
                       : "Connect at least one source"}
                   </span>
                 </motion.button>
@@ -2485,7 +2232,7 @@ export default function PageClient() {
                   transition={{ delay: 0.5 }}
                   className="text-center text-[11px] text-white/25 mt-3"
                 >
-                  Your mirror is generated from real connected data — no questionnaire.
+                  Your reflection is generated from real connected data — no questionnaire.
                 </motion.p>
               </motion.div>
 
@@ -2537,8 +2284,8 @@ export default function PageClient() {
                   2
                 </div>
                 <div>
-                  <h2 className="font-display text-lg font-semibold tracking-tight leading-tight">Your Mirror</h2>
-                  <p className="tracking-ui text-xs text-white/40 mt-0.5">Insights from your connected data</p>
+                  <h2 className="font-display text-lg font-semibold tracking-tight leading-tight">Your Nodea</h2>
+                  <p className="tracking-ui text-xs text-white/40 mt-0.5">Your Score, identity and insights</p>
                 </div>
               </div>
 
@@ -2792,6 +2539,349 @@ export default function PageClient() {
             </motion.div>
           </>
         )}
+
+        {view === "identity" && (
+          <>
+            {/* Identity page (PRD #17) */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-center mb-8"
+            >
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.07] bg-white/[0.02] text-[11px] uppercase tracking-widest text-white/40 mb-4">
+                <Users className="w-3.5 h-3.5" /> Identity
+              </div>
+              <h1 className="font-display-hero text-3xl md:text-5xl font-semibold tracking-tighter text-white">
+                Who does Nodea think <span className="gradient-brand">you are?</span>
+              </h1>
+              <p className="mt-4 text-white/45 text-sm md:text-base max-w-xl mx-auto">
+                Your identity interpretation is built from patterns in your real activity — what you create, consume and connect.
+              </p>
+            </motion.div>
+
+            {/* In-Reflection sub-nav */}
+            <div className="flex items-center justify-center gap-2 mb-8">
+              {([
+                { v: "card", label: "Overview" },
+                { v: "identity", label: "Identity" },
+                { v: "insights", label: "Insights" },
+              ] as const).map((item: { v: ViewKey; label: string }) => (
+                <button
+                  key={item.label}
+                  onClick={() => goView(item.v)}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                    view === item.v
+                      ? "text-[#38BDF8] bg-[#38BDF8]/10"
+                      : "text-[#94A3B8] hover:text-[#E2E8F0] hover:bg-white/[0.04]"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            {identities.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-6 rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.01] text-center"
+              >
+                <div className="text-white/80 font-display text-lg font-semibold">Your Nodea starts with one source.</div>
+                <p className="mt-2 text-white/40 text-sm">Connect an account to discover your digital identity.</p>
+                <motion.button
+                  whileHover={reducedMotion ? {} : { scale: 1.03, y: -1 }}
+                  whileTap={reducedMotion ? {} : { scale: 0.97 }}
+                  onClick={() => openConnect()}
+                  className="mt-5 inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold text-white transition-shadow duration-300"
+                  style={{ background: "linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%)" }}
+                >
+                  <Plus className="w-4 h-4" /> Connect an account
+                </motion.button>
+              </motion.div>
+            ) : !identityResult ? (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-6 rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.01] text-center"
+              >
+                <div className="text-white/80 font-display text-lg font-semibold">Generate your identity</div>
+                <p className="mt-2 text-white/40 text-sm">Connect and generate to see who your activity says you are.</p>
+                <motion.button
+                  whileHover={reducedMotion ? {} : { scale: 1.03, y: -1 }}
+                  whileTap={reducedMotion ? {} : { scale: 0.97 }}
+                  onClick={handleGenerate}
+                  disabled={generating}
+                  className="mt-5 inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold text-white transition-shadow duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ background: "linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%)" }}
+                >
+                  {generating ? "Generating…" : "Generate Identity"}
+                </motion.button>
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: easeOut }}
+              >
+                {/* ── Clean, editorial result (Pathfit-style) ── */}
+                <IdentityResult
+                  identities={identities.map((i) => ({ source: i.source, data: i.data }))}
+                  mode="auto"
+                />
+
+                {/* Quiet upsell — one line, no card clutter */}
+                <div className="max-w-2xl mx-auto mt-6 text-center">
+                  <button
+                    onClick={() => openConnect()}
+                    className="text-[13px] text-white/40 hover:text-white/70 transition-colors"
+                  >
+                    Connect another source to reveal another side of you{" "}
+                    <span className="text-blue-400/80">→</span>
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </>
+        )}
+
+        {view === "insights" && (
+          <>
+            {/* Insights page (PRD #18) */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-center mb-8"
+            >
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.07] bg-white/[0.02] text-[11px] uppercase tracking-widest text-white/40 mb-4">
+                <Sparkles className="w-3.5 h-3.5" /> Insights
+              </div>
+              <h1 className="font-display-hero text-3xl md:text-5xl font-semibold tracking-tighter text-white">
+                Discoveries from <span className="gradient-brand">your activity</span>
+              </h1>
+              <p className="mt-4 text-white/45 text-sm md:text-base max-w-xl mx-auto">
+                Structured observations about your digital identity — patterns, strengths and unique combinations.
+              </p>
+            </motion.div>
+
+            {/* In-Reflection sub-nav */}
+            <div className="flex items-center justify-center gap-2 mb-8">
+              {([
+                { v: "card", label: "Overview" },
+                { v: "identity", label: "Identity" },
+                { v: "insights", label: "Insights" },
+              ] as const).map((item: { v: ViewKey; label: string }) => (
+                <button
+                  key={item.label}
+                  onClick={() => goView(item.v)}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                    view === item.v
+                      ? "text-[#38BDF8] bg-[#38BDF8]/10"
+                      : "text-[#94A3B8] hover:text-[#E2E8F0] hover:bg-white/[0.04]"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            {identities.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-6 rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.01] text-center"
+              >
+                <div className="text-white/80 font-display text-lg font-semibold">Your Nodea starts with one source.</div>
+                <p className="mt-2 text-white/40 text-sm">Connect an account to discover your digital identity.</p>
+                <motion.button
+                  whileHover={reducedMotion ? {} : { scale: 1.03, y: -1 }}
+                  whileTap={reducedMotion ? {} : { scale: 0.97 }}
+                  onClick={() => openConnect()}
+                  className="mt-5 inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold text-white transition-shadow duration-300"
+                  style={{ background: "linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%)" }}
+                >
+                  <Plus className="w-4 h-4" /> Connect an account
+                </motion.button>
+              </motion.div>
+            ) : (
+              <div className="max-w-3xl mx-auto space-y-5">
+                <InsightsPanel
+                  identities={identities.map((i) => ({ source: i.source, data: i.data }))}
+                  mode="auto"
+                />
+                {identityResult && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <motion.button
+                      whileHover={reducedMotion ? {} : { scale: 1.02, y: -2 }}
+                      whileTap={reducedMotion ? {} : { scale: 0.98 }}
+                      onClick={shareCard}
+                      className="flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-semibold text-white transition-all duration-300"
+                      style={{ background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)" }}
+                    >
+                      <Share2 className="w-4.5 h-4.5" /> Share
+                    </motion.button>
+                    <motion.button
+                      whileHover={reducedMotion ? {} : { scale: 1.02, y: -2 }}
+                      whileTap={reducedMotion ? {} : { scale: 0.98 }}
+                      onClick={copyCardLink}
+                      className="flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-semibold bg-white/[0.05] hover:bg-white/[0.1] border border-white/10"
+                    >
+                      <Copy className="w-4.5 h-4.5" /> Copy Link
+                    </motion.button>
+                  </div>
+                )}
+                <motion.div
+                  whileHover={reducedMotion ? {} : { scale: 1.02, y: -2 }}
+                  whileTap={reducedMotion ? {} : { scale: 0.98 }}
+                  onClick={() => openConnect()}
+                  className="p-5 rounded-2xl border border-white/[0.06] bg-white/[0.02] cursor-pointer hover:border-white/15 transition-colors"
+                >
+                  <div className="text-sm font-semibold text-white/80">Want a deeper picture?</div>
+                  <div className="mt-1 text-xs text-white/40">Connect another source for richer cross-source insights. <span className="text-blue-400 font-medium">+ Add source →</span></div>
+                </motion.div>
+              </div>
+            )}
+          </>
+        )}
+
+        {view === "settings" && (
+          <>
+            {/* Settings page */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-center mb-8"
+            >
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.07] bg-white/[0.02] text-[11px] uppercase tracking-widest text-white/40 mb-4">
+                <Settings className="w-3.5 h-3.5" /> Settings
+              </div>
+              <h1 className="font-display-hero text-3xl md:text-5xl font-semibold tracking-tighter text-white">
+                Your Nodea <span className="gradient-brand">settings</span>
+              </h1>
+              <p className="mt-4 text-white/45 text-sm md:text-base max-w-xl mx-auto">
+                Locally stored in your browser. Nothing leaves your machine unless you choose.
+              </p>
+            </motion.div>
+
+            <div className="max-w-3xl mx-auto space-y-4">
+              {/* Connected accounts — per-source disconnect */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, duration: 0.5 }}
+                className="p-6 rounded-2xl glass glass-border"
+              >
+                <h3 className="text-sm font-semibold text-white/70 flex items-center gap-2 mb-4">
+                  <Layers className="w-4 h-4 text-blue-400" />
+                  Connected accounts
+                </h3>
+                {identities.length === 0 ? (
+                  <p className="text-sm text-white/40">You have no connected sources yet.</p>
+                ) : (
+                  <div className="space-y-2.5">
+                    {identities.map((id) => {
+                      const src = DATA_SOURCES.find((s) => s.id === id.source);
+                      return (
+                        <div
+                          key={id.source}
+                          className="flex items-center gap-3 justify-between py-2.5 border-b border-white/[0.05] last:border-0"
+                        >
+                          <div className="flex items-center gap-3">
+                            {src && <BrandIcon id={src.icon} size={20} />}
+                            <div>
+                              <div className="text-sm font-medium text-white/80">{src?.name || id.source}</div>
+                              <div className="text-[11px] text-white/35">{src?.description}</div>
+                            </div>
+                          </div>
+                          <motion.button
+                            whileHover={reducedMotion ? {} : { scale: 1.03 }}
+                            whileTap={reducedMotion ? {} : { scale: 0.95 }}
+                            onClick={() => disconnectSource(id.source)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-300 hover:text-red-200 hover:bg-red-500/10 border border-red-500/20 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Disconnect
+                          </motion.button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                <motion.button
+                  whileHover={reducedMotion ? {} : { scale: 1.02, y: -1 }}
+                  whileTap={reducedMotion ? {} : { scale: 0.98 }}
+                  onClick={() => openConnect()}
+                  className="mt-4 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-shadow duration-300"
+                  style={{ background: "linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%)" }}
+                >
+                  <Plus className="w-4 h-4" /> Add another source
+                </motion.button>
+              </motion.div>
+
+              {/* Local data */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15, duration: 0.5 }}
+                className="p-6 rounded-2xl glass glass-border"
+              >
+                <h3 className="text-sm font-semibold text-white/70 flex items-center gap-2 mb-4">
+                  <Database className="w-4 h-4 text-blue-400" /> Data stored locally
+                </h3>
+                <div className="text-xs text-white/35 space-y-1 font-mono">
+                  <div>nodea:identities — your connected sources &amp; parsed data</div>
+                  <div>nodea:onboarded — which sources are marked connected</div>
+                  <div>nodea:connect-pending — in-flight connection state</div>
+                </div>
+              </motion.div>
+
+              {/* Reset */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+                className="p-6 rounded-2xl border border-red-500/20 bg-red-500/[0.03]"
+              >
+                <h3 className="text-sm font-semibold text-red-300/80 flex items-center gap-2 mb-2">
+                  <Trash2 className="w-4 h-4" /> Forget my reflection
+                </h3>
+                <p className="text-xs text-white/40 mb-4">
+                  Wipe locally stored identity, score and connection state. This cannot be undone.
+                </p>
+                <div className="flex gap-2">
+                  <motion.button
+                    whileHover={reducedMotion ? {} : { scale: 1.02 }}
+                    whileTap={reducedMotion ? {} : { scale: 0.97 }}
+                    onClick={() => {
+                      if (typeof window !== "undefined") {
+                        window.localStorage.removeItem("nodea:identities");
+                        window.localStorage.removeItem("nodea:onboarded");
+                        window.localStorage.removeItem("nodea:connect-pending");
+                      }
+                      setIdentities([]);
+                      setOnboardedSources(new Set());
+                      setIdentityResult(null);
+                      setRefFrom(null);
+                      goView("home");
+                    }}
+                    className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 transition-colors"
+                  >
+                    Reset my data
+                  </motion.button>
+                  <motion.button
+                    whileHover={reducedMotion ? {} : { scale: 1.02 }}
+                    whileTap={reducedMotion ? {} : { scale: 0.97 }}
+                    onClick={() => goView("card")}
+                    className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white/70 hover:text-white bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 transition-colors"
+                  >
+                    Cancel
+                  </motion.button>
+                </div>
+              </motion.div>
+            </div>
+          </>
+        )}
         </main>
 
         {view === "home" && (
@@ -2896,7 +2986,7 @@ export default function PageClient() {
                   Every day, you leave a trail — the songs you replay, the code you push,
                   the photos you post, the games you finish, the videos you binge. On their
                   own, each trace looks small. Together, they form something remarkable:{" "}
-                  <strong className="text-white font-semibold">an honest mirror of who you really are</strong>.
+                  <strong className="text-white font-semibold">an honest reflection of who you really are</strong>.
                   More honest than any resume. More honest than any bio. More honest than the
                   version of yourself you carefully craft for the world.
                 </p>
@@ -2937,7 +3027,7 @@ export default function PageClient() {
 
               <div className="mt-8 flex flex-wrap items-center gap-4">
                 <button
-                  onClick={() => goView("connect")}
+                  onClick={() => openConnect()}
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-shadow duration-300"
                   style={{ background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)", boxShadow: "0 8px 30px -8px rgba(79,140,255,0.5)" }}
                 >
@@ -2990,7 +3080,7 @@ export default function PageClient() {
                 <p className="mt-3 text-[15px] text-white/55 leading-relaxed">
                   Every like, scroll and purchase gets analyzed — by platforms, ad networks,
                   researchers. They often know your habits better than your closest friends.
-                  The only one missing from that conversation is you. Nodea puts the mirror
+                  The only one missing from that conversation is you. Nodea puts the reflection
                   back in your hands.
                 </p>
                 <blockquote className="border-l-2 border-cyan-400/50 pl-3 my-1 text-white/60 italic text-sm mt-4">
@@ -3024,17 +3114,14 @@ export default function PageClient() {
                 <AppLogo size={56} />
               </motion.div>
               <h2 className="font-display-hero text-3xl md:text-5xl lg:text-6xl font-semibold tracking-tighter text-white leading-tight">
-                Your data has a story.
-                <br />
-                <span className="gradient-brand">See what it says.</span>
+                Discover your Nodea.
               </h2>
               <p className="mt-5 text-white/50 text-base md:text-lg max-w-xl mx-auto">
-                Connect one account and discover what your data says about you — it takes less than a minute.
-              </p>
+                Connect one account and discover what your data says about you — it takes less than a minute.</p>
               <motion.button
                 whileHover={reducedMotion ? {} : { scale: 1.04, y: -2 }}
                 whileTap={reducedMotion ? {} : { scale: 0.97 }}
-                onClick={() => goView("connect")}
+                onClick={() => openConnect()}
                 className="mt-9 inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl text-base font-semibold text-white transition-shadow duration-300"
                 style={{
                   background: "linear-gradient(135deg, #4F8CFF 0%, #00D4FF 100%)",
@@ -3233,38 +3320,73 @@ export default function PageClient() {
           )}
         </AnimatePresence>
 
-        {/* ── Bottom Nav (Patina-style tab bar) ── */}
-        <nav
-          className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/[0.08] bg-(--color-bg)/90 backdrop-blur-2xl"
-          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-          aria-label="Primary"
-        >
-          <div className="mx-auto max-w-lg grid grid-cols-5">
-            {[
-              { v: "home", label: "Home", icon: Home },
-              { v: "article", label: "Article", icon: Newspaper },
-              { v: "connect", label: "Connect", icon: Plus },
-              { v: "card", label: "Mirror", icon: CreditCard },
-              { v: "standings", label: "Standings", icon: Trophy },
-            ].map((t) => {
-              const active = view === t.v;
-              return (
-                <button
-                  key={t.v}
-                  onClick={() => goView(t.v as ViewKey)}
-                  className={`flex flex-col items-center justify-center gap-1 pt-2.5 pb-2 transition-colors ${
-                    active ? "text-cyan-400" : "text-white/45 hover:text-white/70"
-                  }`}
-                  aria-current={active ? "page" : undefined}
-                >
-                  <t.icon className="w-5 h-5" strokeWidth={active ? 2.2 : 1.8} />
-                  <span className="text-[10px] font-medium tracking-wide">{t.label}</span>
-                  <span className={`h-1 w-1 rounded-full transition-colors ${active ? "bg-cyan-400" : "bg-transparent"}`} />
-                </button>
-              );
-            })}
-          </div>
-        </nav>
+        {/* ── "Add a source" bottom sheet (dashboard entry points) ── */}
+        <AnimatePresence>
+          {connectSheetOpen && (
+            <motion.div
+              key="connectsheet"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[90] flex items-end justify-center"
+              onClick={() => setConnectSheetOpen(false)}
+            >
+              <div className="absolute inset-0 bg-black/70 backdrop-blur-md" />
+              <motion.div
+                initial={{ opacity: 0, y: 60 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 60 }}
+                transition={{ duration: 0.28, ease: easeOut }}
+                className="relative w-full max-w-lg mx-auto max-h-[85dvh] overflow-y-auto rounded-t-3xl border border-white/10 border-b-0 bg-[#0F172A]/95 backdrop-blur-xl p-5 pb-8 shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="font-display text-lg font-semibold text-white">
+                    Add a source
+                  </h3>
+                  <button
+                    onClick={() => setConnectSheetOpen(false)}
+                    className="text-white/40 hover:text-white transition-colors p-1"
+                    aria-label="Close"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <p className="text-xs text-white/45 mb-4">
+                  Connect a platform and Nodea reads your real activity — straight from
+                  this sheet, no separate tab needed.
+                </p>
+                <div className="space-y-2.5">
+                  {DATA_SOURCES.filter((s) => s.id !== "chatgpt").map((source) => (
+                    <div
+                      key={source.id}
+                      className="flex items-center gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.02] p-3"
+                    >
+                      <BrandIconTile id={source.icon} size={34} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-white truncate">
+                            {source.name}
+                          </span>
+                          <span className="text-[10px] text-cyan-300/80 truncate">
+                            {source.dna}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-white/45 truncate">
+                          {source.outputSummary}
+                        </p>
+                      </div>
+                      {renderSourceActions(source)}
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-4 text-center text-[11px] text-white/30">
+                  You approve exactly what we read — and you can revoke anytime.
+                </p>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );

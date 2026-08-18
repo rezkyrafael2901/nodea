@@ -70,7 +70,7 @@ export function createVanaController(sourceId: string, mode: "web" | "full" = "w
     app: {
       id: process.env.VANA_APP_ID || "nodea",
       name: process.env.VANA_APP_NAME || "Nodea",
-      homepageUrl: process.env.VANA_APP_URL || "https://nodeahub.vercel.app",
+      homepageUrl: process.env.VANA_APP_URL || "https://nodea-v2.vercel.app",
     },
     source: sourceId,
     scopes: scopes,

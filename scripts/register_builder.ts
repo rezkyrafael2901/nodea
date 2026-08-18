@@ -1,11 +1,12 @@
 import { privateKeyToAccount } from "viem/accounts";
 
-const GATEWAY_URL = "https://dp-rpc.vana.org";
-const NETWORK = "mainnet";
-const CHAIN_ID = 1480;
-const VERIFYING_CONTRACT = "0x8325C0A0948483EdA023A1A2Fd895e62C5131234";
-
 async function main() {
+  // Generated for this environment — no contract or gateway knowledge required.
+  const GATEWAY_URL = "https://dp-rpc.vana.org";
+  const NETWORK = "mainnet";
+  const CHAIN_ID = 1480;
+  const VERIFYING_CONTRACT = "0x8325C0A0948483EdA023A1A2Fd895e62C5131234";
+
   const account = privateKeyToAccount(
     process.env.VANA_PRIVATE_KEY as `0x${string}`,
   );
@@ -47,14 +48,18 @@ async function main() {
   });
 
   if (!response.ok) {
-    throw new Error(`Registration failed (${response.status}): ${await response.text()}`);
+    throw new Error(
+      `Registration failed (${response.status}): ${await response.text()}`,
+    );
   }
 
   console.log("Registered app identity:", account.address);
-  console.log("Response:", await response.text());
+  console.log("appUrl:", appUrl);
+  const body = await response.text();
+  console.log("response:", body);
 }
 
-main().catch((err) => {
-  console.error(err);
+main().catch((e) => {
+  console.error("ERROR:", e.message);
   process.exit(1);
 });

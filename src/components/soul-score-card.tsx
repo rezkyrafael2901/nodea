@@ -58,7 +58,7 @@ export function SoulScoreCard({ score, connectedCount }: SoulScoreCardProps) {
     <div className="rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-5">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <div className="text-sm font-semibold text-white/80">Soul Score</div>
+        <div className="text-sm font-semibold text-white/80">Nodea Score</div>
         <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-semibold bg-gradient-to-b ${gradeColor}`}>
           Grade {score.grade}
         </span>

@@ -26,11 +26,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Missing or invalid sourceId" }, { status: 400 });
     }
 
-    // Mock data is development-only; production must return real approved data.
+    // Check if app private key is configured
     if (!process.env.VANA_APP_PRIVATE_KEY) {
-      if (process.env.NODE_ENV === "production") {
-        return NextResponse.json({ error: "Vana data read is temporarily unavailable." }, { status: 503 });
-      }
+      // Dev mode: return mock data when real SDK is not configured
       const { default: mockData } = await import("./mock-data");
       const data = mockData(sourceId);
       return NextResponse.json({

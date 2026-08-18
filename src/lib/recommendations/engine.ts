@@ -127,7 +127,7 @@ export function buildIdentityCard(allInsights: { source: string; insights: Insig
 
 // ────────────────────────────────────────────────────────────────────────────
 // PERSONALITY TABLE — crafted taglines + rationales per insight title.
-// Mirrors Pathfit's editorial quality: personality statements, not data points.
+// Follows Pathfit's editorial quality: personality statements, not data points.
 // ────────────────────────────────────────────────────────────────────────────
 
 const PERSONALITY: Record<string, { tagline: string; rationale: string }> = {
@@ -357,7 +357,7 @@ const PERSONALITY: Record<string, { tagline: string; rationale: string }> = {
 };
 
 // Per-source data description for the "matched from" suffix.
-// Mirrors Pathfit's "matched from the accounting and financial-reporting language already in your headline and about section."
+// Follows Pathfit's "matched from the accounting and financial-reporting language already in your headline and about section."
 const SOURCE_DATA_DESC: Record<string, string> = {
   github: "your public repositories, stars, and contribution activity",
   instagram: "your followers, posts, and engagement rate",

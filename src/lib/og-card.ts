@@ -173,8 +173,8 @@ export function buildSoulCardSvg(p: OgCardParams): string {
       <!-- Source badges -->
       ${sourceBadges}
 
-      <!-- Soul Score bar -->
-      <text x="120" y="392" font-family="system-ui,sans-serif" font-size="14" fill="rgba(255,255,255,0.4)">SOUL SCORE</text>
+      <!-- Nodea Score bar -->
+      <text x="120" y="392" font-family="system-ui,sans-serif" font-size="14" fill="rgba(255,255,255,0.4)">NODEA SCORE</text>
       <rect x="120" y="400" width="960" height="12" rx="6" fill="rgba(255,255,255,0.1)" />
       <rect x="120" y="400" width="${scoreWidth}" height="12" rx="6" fill="url(#scorebar)" />
 
@@ -195,7 +195,7 @@ export function buildSoulCardSvg(p: OgCardParams): string {
       <text x="120" y="590" font-family="system-ui,sans-serif" font-size="18" fill="rgba(255,255,255,0.5)">Aesthetic: ${safeAesthetic} • Built on Vana Network</text>
 
       <!-- Watermark -->
-      <text x="1100" y="590" text-anchor="end" font-family="system-ui,sans-serif" font-size="14" fill="rgba(255,255,255,0.2)">nodeahub.vercel.app${ref ? ` · via ${ref}` : ""}</text>
+      <text x="1100" y="590" text-anchor="end" font-family="system-ui,sans-serif" font-size="14" fill="rgba(255,255,255,0.2)">nodea-v2.vercel.app${ref ? ` · via ${ref}` : ""}</text>
     </svg>`;
 }
 

@@ -38,10 +38,10 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
   const title = hasCard
     ? ref
       ? `Nodea — Can you beat Grade ${ref}?`
-      : `Nodea — Soul Score ${score ? `${score}/100` : ""}${grade ? ` · Grade ${grade}` : ""}`
+      : `Nodea — Nodea Score ${score ? `${score}/100` : ""}${grade ? ` · Grade ${grade}` : ""}`
     : "Nodea — Your Digital Identity Card";
   const description = hasCard
-    ? "Connect your data across Vana and generate your own Soul Card. Beat this score!"
+    ? "Connect your data across Vana and generate your own Nodea Card. Beat this score!"
     : "Connect GitHub, Instagram, ChatGPT, Spotify, YouTube and Steam. Get one card that reflects your real digital self.";
 
   return {
